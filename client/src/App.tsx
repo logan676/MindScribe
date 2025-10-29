@@ -6,6 +6,7 @@ import { SessionRecording } from './pages/SessionRecording';
 import { ClinicalNotes } from './pages/ClinicalNotes';
 import { PatientProfile } from './pages/PatientProfile';
 import { Search } from './pages/Search';
+import { Settings } from './pages/Settings';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -36,9 +37,10 @@ function App() {
               <Route path=":patientId" element={<PatientProfile />} />
             </Route>
             <Route path="search" element={<Search />} />
-            <Route path="settings" element={<div>Settings Page (Coming Soon)</div>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
+          {/* Settings page with its own layout */}
+          <Route path="settings" element={<Settings />} />
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>

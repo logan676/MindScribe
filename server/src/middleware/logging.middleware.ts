@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import logger, { logError } from '../config/logger.js';
 
 // Add request ID to track requests
