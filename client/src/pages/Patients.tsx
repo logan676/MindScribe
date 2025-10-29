@@ -28,6 +28,108 @@ const mockPatients = [
     lastName: 'Davis',
     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Chloe',
   },
+  {
+    id: '34595',
+    firstName: 'David',
+    lastName: 'Evans',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=David',
+  },
+  {
+    id: '34596',
+    firstName: 'Emma',
+    lastName: 'Foster',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Emma',
+  },
+  {
+    id: '34597',
+    firstName: 'Frank',
+    lastName: 'Garcia',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Frank',
+  },
+  {
+    id: '34598',
+    firstName: 'Grace',
+    lastName: 'Harper',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Grace',
+  },
+  {
+    id: '34599',
+    firstName: 'Henry',
+    lastName: 'Irving',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Henry',
+  },
+  {
+    id: '34600',
+    firstName: 'Isabella',
+    lastName: 'Johnson',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Isabella',
+  },
+  {
+    id: '34601',
+    firstName: 'Jack',
+    lastName: 'Kumar',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Jack',
+  },
+  {
+    id: '34602',
+    firstName: 'Katherine',
+    lastName: 'Lee',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Katherine',
+  },
+  {
+    id: '34603',
+    firstName: 'Liam',
+    lastName: 'Martinez',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Liam',
+  },
+  {
+    id: '34604',
+    firstName: 'Maya',
+    lastName: 'Nelson',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Maya',
+  },
+  {
+    id: '34605',
+    firstName: 'Noah',
+    lastName: 'O\'Brien',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Noah',
+  },
+  {
+    id: '34606',
+    firstName: 'Olivia',
+    lastName: 'Patel',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Olivia',
+  },
+  {
+    id: '34607',
+    firstName: 'Patrick',
+    lastName: 'Quinn',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Patrick',
+  },
+  {
+    id: '34608',
+    firstName: 'Rachel',
+    lastName: 'Robinson',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Rachel',
+  },
+  {
+    id: '34609',
+    firstName: 'Samuel',
+    lastName: 'Smith',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Samuel',
+  },
+  {
+    id: '34610',
+    firstName: 'Taylor',
+    lastName: 'Thompson',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Taylor',
+  },
+  {
+    id: '34611',
+    firstName: 'Victoria',
+    lastName: 'Williams',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Victoria',
+  },
 ];
 
 const mockSelectedPatient = {
