@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:14-alpine
+    container_name: mindscribe-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: mindscribe
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: mindscribe-backend
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      # Database
+      PGHOST: postgres
+      PGPORT: 5432
+      PGDATABASE: mindscribe
+      PGUSER: postgres
+      PGPASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      # API Keys
+      ASSEMBLYAI_API_KEY: ${ASSEMBLYAI_API_KEY}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
+      # Security
+      JWT_SECRET: ${JWT_SECRET:-change-this-in-production}
+      # CORS
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
+      # File Upload
+      UPLOAD_DIR: ./uploads
+      MAX_FILE_SIZE: 500000000
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  # Frontend
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:3001/api}
+    container_name: mindscribe-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+volumes:
+  postgres_data:
+    driver: local
+  uploads:
+    driver: local
+
+networks:
+  default:
+    name: mindscribe-network
