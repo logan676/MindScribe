@@ -5,6 +5,7 @@ import { Dashboard } from './pages/Dashboard';
 import { SessionRecording } from './pages/SessionRecording';
 import { ClinicalNotes } from './pages/ClinicalNotes';
 import { PatientProfile } from './pages/PatientProfile';
+import { Patients } from './pages/Patients';
 import { Search } from './pages/Search';
 import { Settings } from './pages/Settings';
 
@@ -34,13 +35,13 @@ function App() {
               <Route path=":sessionId" element={<ClinicalNotes />} />
             </Route>
             <Route path="patients">
+              <Route index element={<Patients />} />
               <Route path=":patientId" element={<PatientProfile />} />
             </Route>
             <Route path="search" element={<Search />} />
+            <Route path="settings" element={<Settings />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
-          {/* Settings page with its own layout */}
-          <Route path="settings" element={<Settings />} />
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>

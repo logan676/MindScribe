@@ -49,11 +49,11 @@ export function Settings() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="flex gap-6">
       {/* Sidebar */}
-      <div className="w-80 bg-white border-r border-gray-200 p-6 flex flex-col">
+      <div className="w-64 bg-white rounded-lg shadow-sm p-6 flex flex-col" style={{ height: 'fit-content' }}>
         {/* User Profile Card */}
-        <div className="mb-8">
+        <div className="mb-6">
           <div className="flex items-center gap-3 mb-6">
             <img
               src={user.avatar}
@@ -74,9 +74,9 @@ export function Settings() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                  className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors ${
                     activeTab === tab.id
-                      ? 'bg-cyan-50 text-cyan-600'
+                      ? 'bg-blue-50 text-blue-600'
                       : 'text-gray-700 hover:bg-gray-50'
                   }`}
                 >
@@ -89,18 +89,18 @@ export function Settings() {
         </div>
 
         {/* View Profile Button */}
-        <button className="mt-auto w-full bg-cyan-600 text-white py-3 rounded-lg font-medium hover:bg-cyan-700 transition-colors">
+        <button className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 transition-colors">
           View Profile
         </button>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 p-8">
+      <div className="flex-1">
         {activeTab === 'account' && (
-          <div className="max-w-4xl">
+          <div>
             {/* Header */}
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            <div className="mb-6">
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">
                 Account Settings
               </h1>
               <p className="text-gray-600">
@@ -109,7 +109,7 @@ export function Settings() {
             </div>
 
             {/* Profile Information Section */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-6">
                 Profile Information
               </h2>
@@ -126,7 +126,7 @@ export function Settings() {
                       onChange={(e) =>
                         setFormData({ ...formData, fullName: e.target.value })
                       }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
                   <div>
@@ -142,7 +142,7 @@ export function Settings() {
                           professionalTitle: e.target.value,
                         })
                       }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
                 </div>
@@ -157,7 +157,7 @@ export function Settings() {
                     onChange={(e) =>
                       setFormData({ ...formData, email: e.target.value })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
               </div>
@@ -177,7 +177,7 @@ export function Settings() {
                 </button>
                 <button
                   onClick={handleSaveChanges}
-                  className="px-6 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors"
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   Save Changes
                 </button>
@@ -185,7 +185,7 @@ export function Settings() {
             </div>
 
             {/* Password & Security Section */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-6">
                 Password & Security
               </h2>
@@ -220,7 +220,7 @@ export function Settings() {
                   <button
                     onClick={() => setTwoFactorEnabled(!twoFactorEnabled)}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      twoFactorEnabled ? 'bg-cyan-600' : 'bg-gray-300'
+                      twoFactorEnabled ? 'bg-blue-600' : 'bg-gray-300'
                     }`}
                   >
                     <span
@@ -234,7 +234,7 @@ export function Settings() {
             </div>
 
             {/* Subscription Section */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-6">
                 Subscription
               </h2>
@@ -246,14 +246,14 @@ export function Settings() {
                     Your plan renews on {user.renewalDate}.
                   </p>
                 </div>
-                <button className="px-4 py-2 text-cyan-600 hover:bg-cyan-50 rounded-lg transition-colors font-medium">
+                <button className="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors font-medium">
                   Manage Billing
                 </button>
               </div>
             </div>
 
             {/* Danger Zone Section */}
-            <div className="bg-white rounded-lg border border-red-200 p-6">
+            <div className="bg-white rounded-lg shadow-sm border-2 border-red-200 p-6">
               <h2 className="text-xl font-semibold text-red-600 mb-6">
                 Danger Zone
               </h2>
@@ -277,14 +277,16 @@ export function Settings() {
         )}
 
         {activeTab === 'compliance' && (
-          <div className="max-w-4xl">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Compliance Settings
-            </h1>
-            <p className="text-gray-600 mb-8">
-              Manage HIPAA compliance and audit settings.
-            </p>
-            <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+          <div>
+            <div className="mb-6">
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                Compliance Settings
+              </h1>
+              <p className="text-gray-600">
+                Manage HIPAA compliance and audit settings.
+              </p>
+            </div>
+            <div className="bg-white rounded-lg shadow-sm p-8 text-center">
               <Shield className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-600">
                 Compliance settings will be available soon.
@@ -294,14 +296,16 @@ export function Settings() {
         )}
 
         {activeTab === 'integrations' && (
-          <div className="max-w-4xl">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Integrations
-            </h1>
-            <p className="text-gray-600 mb-8">
-              Connect with third-party services and APIs.
-            </p>
-            <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+          <div>
+            <div className="mb-6">
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                Integrations
+              </h1>
+              <p className="text-gray-600">
+                Connect with third-party services and APIs.
+              </p>
+            </div>
+            <div className="bg-white rounded-lg shadow-sm p-8 text-center">
               <Plug className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-600">
                 Integration settings will be available soon.
@@ -311,12 +315,14 @@ export function Settings() {
         )}
 
         {activeTab === 'templates' && (
-          <div className="max-w-4xl">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Templates</h1>
-            <p className="text-gray-600 mb-8">
-              Manage your clinical note templates and formats.
-            </p>
-            <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+          <div>
+            <div className="mb-6">
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Templates</h1>
+              <p className="text-gray-600">
+                Manage your clinical note templates and formats.
+              </p>
+            </div>
+            <div className="bg-white rounded-lg shadow-sm p-8 text-center">
               <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-600">
                 Template management will be available soon.
