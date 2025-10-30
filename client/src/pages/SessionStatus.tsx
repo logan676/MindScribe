@@ -436,8 +436,52 @@ export function SessionStatus() {
       <div className="card p-6">
         <h2 className="text-xl font-bold text-gray-900 mb-4">Debug Information</h2>
 
-        <div className="bg-gray-900 text-gray-100 rounded-lg p-4 font-mono text-sm overflow-x-auto">
-          <pre>{JSON.stringify(session, null, 2)}</pre>
+        <div className="space-y-4">
+          {/* Backend Processing Logs */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-2">🔄 Backend Processing Status</h3>
+            <div className="bg-gray-900 text-gray-100 rounded-lg p-4 font-mono text-xs overflow-x-auto">
+              <div className="space-y-1">
+                <div className="text-blue-400">📊 Session ID: {sessionId}</div>
+                <div className="text-yellow-400">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>
+
+                <div className="text-green-400">✓ Recording Upload Status: {session.recording_path ? 'Completed' : 'Pending'}</div>
+                {session.recording_path && (
+                  <div className="text-gray-400 ml-4">└─ File: {session.recording_path}</div>
+                )}
+
+                <div className={`${session.transcription_status === 'completed' ? 'text-green-400' : session.transcription_status === 'in_progress' ? 'text-yellow-400' : session.transcription_status === 'failed' ? 'text-red-400' : 'text-gray-400'}`}>
+                  {session.transcription_status === 'completed' ? '✓' : session.transcription_status === 'in_progress' ? '⟳' : session.transcription_status === 'failed' ? '✗' : '○'} Transcription Status: {session.transcription_status || 'Not started'}
+                </div>
+                {session.transcription_status === 'completed' && (
+                  <div className="text-gray-400 ml-4">└─ Transcription engine: AssemblyAI SDK</div>
+                )}
+                {session.transcription_error && (
+                  <div className="text-red-400 ml-4">└─ Error: {session.transcription_error}</div>
+                )}
+
+                <div className={`${notesStatus.hasNotes ? 'text-green-400' : notesStatus.isGenerating ? 'text-yellow-400' : 'text-gray-400'}`}>
+                  {notesStatus.hasNotes ? '✓' : notesStatus.isGenerating ? '⟳' : '○'} AI Notes Generation: {notesStatus.hasNotes ? 'Completed' : notesStatus.isGenerating ? 'In Progress' : 'Pending'}
+                </div>
+                {notesStatus.hasNotes && (
+                  <div className="text-gray-400 ml-4">└─ AI engine: DeepSeek API</div>
+                )}
+
+                <div className="text-yellow-400 mt-2">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>
+                <div className="text-blue-400">⏱️  Session Duration: {Math.round(session.duration / 60)} minutes</div>
+                <div className="text-blue-400">🕐 Created: {new Date(session.created_at).toLocaleString()}</div>
+                <div className="text-blue-400">🔄 Last Updated: {new Date(session.updated_at).toLocaleString()}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Raw Session Data */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-2">📋 Raw Session Data</h3>
+            <div className="bg-gray-900 text-gray-100 rounded-lg p-4 font-mono text-xs overflow-x-auto">
+              <pre>{JSON.stringify(session, null, 2)}</pre>
+            </div>
+          </div>
         </div>
       </div>
     </div>
