@@ -176,44 +176,127 @@ export function SessionStatus() {
             </div>
           </div>
 
-          {/* Transcription Status */}
+          {/* Processing Pipeline */}
           <div className="bg-gray-50 rounded-lg p-4">
-            <div className="flex items-start gap-3">
+            <div className="flex items-start gap-3 mb-4">
               <Brain className="w-6 h-6 text-purple-600 mt-1" />
               <div className="flex-1">
-                <h3 className="font-semibold text-gray-900 mb-1">Backend Processing</h3>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-sm text-gray-600">Transcription Status:</span>
-                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(session.transcription_status)}`}>
-                    {getStatusText(session.transcription_status)}
-                  </span>
+                <h3 className="font-semibold text-gray-900 mb-1">Backend Processing Pipeline</h3>
+                <p className="text-xs text-gray-500">Multi-stage AI analysis and transcription</p>
+              </div>
+            </div>
+
+            {/* Pipeline Steps */}
+            <div className="space-y-3 ml-9">
+              {/* Step 1: Transcription */}
+              <div className="flex items-start gap-3">
+                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-purple-100 text-purple-600 text-xs font-bold flex-shrink-0">
+                  1
                 </div>
-                {session.transcription_status === 'pending' && (
-                  <p className="text-sm text-gray-600">Waiting for backend to start processing...</p>
-                )}
-                {session.transcription_status === 'in_progress' && (
-                  <p className="text-sm text-gray-600">Backend is currently transcribing your session...</p>
-                )}
-                {session.transcription_status === 'completed' && (
-                  <p className="text-sm text-gray-600">Transcription completed successfully!</p>
-                )}
-                {session.transcription_status === 'failed' && (
-                  <div className="space-y-2">
-                    <p className="text-sm text-red-600 font-semibold">Transcription failed. Please try again.</p>
-                    {session.transcription_error && (
-                      <div className="bg-red-50 border border-red-200 rounded p-3">
-                        <p className="text-xs text-red-700 font-mono">{session.transcription_error}</p>
-                      </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-sm font-medium text-gray-900">Audio Transcription</span>
+                    {(session.transcription_status === 'pending' || session.transcription_status === 'in_progress') && (
+                      <Loader className="w-4 h-4 text-purple-600 animate-spin" />
+                    )}
+                    {session.transcription_status === 'completed' && (
+                      <CheckCircle className="w-4 h-4 text-green-600" />
                     )}
                   </div>
-                )}
+                  <p className="text-xs text-gray-600">
+                    {session.transcription_status === 'pending' && 'Waiting to start transcription...'}
+                    {session.transcription_status === 'in_progress' && 'Converting audio to text using AI...'}
+                    {session.transcription_status === 'completed' && 'Audio successfully transcribed'}
+                    {session.transcription_status === 'failed' && 'Transcription failed'}
+                  </p>
+                  {session.transcription_status === 'failed' && session.transcription_error && (
+                    <div className="bg-red-50 border border-red-200 rounded p-2 mt-2">
+                      <p className="text-xs text-red-700 font-mono">{session.transcription_error}</p>
+                    </div>
+                  )}
+                </div>
               </div>
-              {session.transcription_status === 'in_progress' && (
-                <Loader className="w-5 h-5 text-purple-600 animate-spin" />
-              )}
-              {session.transcription_status === 'completed' && (
-                <CheckCircle className="w-5 h-5 text-green-600" />
-              )}
+
+              {/* Step 2: Speaker Diarization */}
+              <div className="flex items-start gap-3">
+                <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold flex-shrink-0 ${
+                  session.transcription_status === 'completed' ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-400'
+                }`}>
+                  2
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`text-sm font-medium ${session.transcription_status === 'completed' ? 'text-gray-900' : 'text-gray-400'}`}>
+                      Speaker Analysis
+                    </span>
+                    {session.transcription_status === 'in_progress' && (
+                      <Loader className="w-4 h-4 text-purple-600 animate-spin" />
+                    )}
+                    {session.transcription_status === 'completed' && (
+                      <CheckCircle className="w-4 h-4 text-green-600" />
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-600">
+                    {session.transcription_status === 'pending' && 'Pending transcription completion...'}
+                    {session.transcription_status === 'in_progress' && 'Identifying different speakers...'}
+                    {session.transcription_status === 'completed' && 'Speakers identified and labeled'}
+                    {session.transcription_status === 'failed' && 'Not available'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Step 3: Conversation Segmentation */}
+              <div className="flex items-start gap-3">
+                <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold flex-shrink-0 ${
+                  session.transcription_status === 'completed' ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-400'
+                }`}>
+                  3
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`text-sm font-medium ${session.transcription_status === 'completed' ? 'text-gray-900' : 'text-gray-400'}`}>
+                      Chat View Generation
+                    </span>
+                    {session.transcription_status === 'in_progress' && (
+                      <Loader className="w-4 h-4 text-purple-600 animate-spin" />
+                    )}
+                    {session.transcription_status === 'completed' && (
+                      <CheckCircle className="w-4 h-4 text-green-600" />
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-600">
+                    {session.transcription_status === 'pending' && 'Pending transcription completion...'}
+                    {session.transcription_status === 'in_progress' && 'Processing conversation segments...'}
+                    {session.transcription_status === 'completed' && 'Conversation formatted as chat messages'}
+                    {session.transcription_status === 'failed' && 'Not available'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Step 4: Ready for AI Notes */}
+              <div className="flex items-start gap-3">
+                <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold flex-shrink-0 ${
+                  session.transcription_status === 'completed' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'
+                }`}>
+                  4
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`text-sm font-medium ${session.transcription_status === 'completed' ? 'text-gray-900' : 'text-gray-400'}`}>
+                      Ready for Clinical Notes
+                    </span>
+                    {session.transcription_status === 'completed' && (
+                      <CheckCircle className="w-4 h-4 text-green-600" />
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-600">
+                    {session.transcription_status === 'pending' && 'Pending transcription completion...'}
+                    {session.transcription_status === 'in_progress' && 'Waiting for processing to complete...'}
+                    {session.transcription_status === 'completed' && 'Transcript ready for AI note generation'}
+                    {session.transcription_status === 'failed' && 'Not available'}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>

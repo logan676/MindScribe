@@ -47,6 +47,7 @@ export function ClinicalNotes() {
   const navigate = useNavigate();
 
   const [isLoading, setIsLoading] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [transcriptSegments, setTranscriptSegments] = useState<TranscriptSegment[]>([]);
   const [existingNote, setExistingNote] = useState<ClinicalNote | null>(null);
@@ -124,6 +125,43 @@ export function ClinicalNotes() {
 
     loadSessionData();
   }, [sessionId]);
+
+  // Generate AI notes from transcript
+  const handleGenerateNotes = async () => {
+    if (!sessionId) return;
+
+    try {
+      setIsGenerating(true);
+
+      // Call API to generate notes
+      const response = await api.generateNote(sessionId, noteType);
+
+      if (response.note) {
+        // Update form fields with generated content
+        if (noteType === 'soap') {
+          setSubjective(response.note.subjective || '');
+          setObjective(response.note.objective || '');
+          setAssessment(response.note.assessment || '');
+          setPlan(response.note.plan || '');
+        } else {
+          setDescription(response.note.description || '');
+          setAction(response.note.action || '');
+          setResponse(response.note.response || '');
+          setEvaluation(response.note.evaluation || '');
+        }
+
+        // Update existing note reference
+        setExistingNote(response.note);
+
+        alert('Clinical notes generated successfully! Review and edit as needed.');
+      }
+    } catch (err) {
+      console.error('Failed to generate notes:', err);
+      alert('Failed to generate clinical notes. Please make sure the DeepSeek API key is configured and try again.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   // Format milliseconds to MM:SS
   const formatTime = (milliseconds: number) => {
@@ -290,12 +328,33 @@ export function ClinicalNotes() {
           {/* Note Editor */}
           <div className="flex-1 overflow-y-auto p-6">
             <div className="max-w-4xl space-y-6">
-              {/* AI Generated Badge */}
-              <div className="flex items-center justify-end">
-                <div className="flex items-center gap-2 text-blue-600 bg-blue-50 px-3 py-1 rounded-full text-sm">
-                  <Sparkles className="w-4 h-4" />
-                  AI-Generated Text
-                </div>
+              {/* AI Generate Button and Badge */}
+              <div className="flex items-center justify-between">
+                {session.transcription_status === 'completed' && transcriptSegments.length > 0 && !existingNote && (
+                  <button
+                    onClick={handleGenerateNotes}
+                    disabled={isGenerating}
+                    className="btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isGenerating ? (
+                      <>
+                        <Loader className="w-4 h-4 animate-spin" />
+                        Generating Notes...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4" />
+                        Generate AI Notes
+                      </>
+                    )}
+                  </button>
+                )}
+                {existingNote && (
+                  <div className="flex items-center gap-2 text-blue-600 bg-blue-50 px-3 py-1 rounded-full text-sm">
+                    <Sparkles className="w-4 h-4" />
+                    AI-Generated Text
+                  </div>
+                )}
               </div>
 
               {noteType === 'soap' ? (
