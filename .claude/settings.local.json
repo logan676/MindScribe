@@ -24,7 +24,8 @@
       "Bash(npx tsc:*)",
       "Bash(npx eslint:*)",
       "Bash(PGPASSWORD=postgres psql:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(npm run seed:sessions:*)"
     ],
     "deny": [],
     "ask": []

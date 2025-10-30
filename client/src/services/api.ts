@@ -149,6 +149,10 @@ class ApiClient {
     return this.request(`/notes/${noteId}`);
   }
 
+  async getSessionNotes(sessionId: string) {
+    return this.request(`/notes/session/${sessionId}`);
+  }
+
   // Patients
   async getPatients() {
     return this.request('/patients');

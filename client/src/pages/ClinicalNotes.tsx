@@ -1,57 +1,172 @@
-import { useState } from 'react';
-import { Save, FileText, Lock, Clock, Sparkles, ArrowLeft } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Save, FileText, Lock, Clock, Sparkles, ArrowLeft, Loader } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { api } from '../services/api';
 
 type NoteType = 'soap' | 'dare';
 
-// Mock transcript data
-const mockTranscript = [
-  {
-    id: '1',
-    speaker: 'therapist' as const,
-    time: '00:15',
-    text: 'Good morning, Jane. Thank you for coming in today. How have things been since our last session?',
-  },
-  {
-    id: '2',
-    speaker: 'client' as const,
-    time: '00:42',
-    text: "Hi, Dr. Anya. Things have been... a bit of a rollercoaster. I tried that mindfulness exercise you suggested, and it helped sometimes. But this week at work was really stressful.",
-  },
-  {
-    id: '3',
-    speaker: 'therapist' as const,
-    time: '01:10',
-    text: 'I see. Can you tell me more about what was stressful at work?',
-  },
-  {
-    id: '4',
-    speaker: 'client' as const,
-    time: '01:35',
-    text: 'We had a major project deadline, and I felt like all the pressure was on me. I was working late, and my sleep schedule got all messed up again. I started feeling that familiar sense of dread on Sunday evening.',
-  },
-  {
-    id: '5',
-    speaker: 'therapist' as const,
-    time: '02:01',
-    text: "That sounds incredibly challenging. It's understandable that your sleep would be affected. Let's explore that feeling of dread a bit more.",
-  },
-];
+interface Session {
+  id: string;
+  patient_id: string;
+  first_name: string;
+  last_name: string;
+  client_id: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  duration: number;
+  status: string;
+  transcription_status: string;
+}
+
+interface TranscriptSegment {
+  id: string;
+  speaker: 'therapist' | 'client';
+  text: string;
+  start_time: number;
+  end_time: number;
+  confidence: number;
+}
+
+interface ClinicalNote {
+  id: string;
+  type: 'soap' | 'dare';
+  status: string;
+  subjective?: string;
+  objective?: string;
+  assessment?: string;
+  plan?: string;
+  description?: string;
+  action?: string;
+  response?: string;
+  evaluation?: string;
+}
 
 export function ClinicalNotes() {
-  const { sessionId: _ } = useParams();
+  const { sessionId } = useParams();
   const navigate = useNavigate();
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [session, setSession] = useState<Session | null>(null);
+  const [transcriptSegments, setTranscriptSegments] = useState<TranscriptSegment[]>([]);
+  const [existingNote, setExistingNote] = useState<ClinicalNote | null>(null);
+
   const [noteType, setNoteType] = useState<NoteType>('soap');
-  const [subjective, setSubjective] = useState(
-    'Client reports a "rollercoaster" week with significant work-related stress due to a major project deadline. She notes a recurrence of sleep disruption and the "familiar sense of dread on Sunday evening." Client identifies a core fear of failure and "letting everyone down." She mentions utilizing mindfulness exercises with some success.'
-  );
-  const [objective, setObjective] = useState(
-    'Client presented as alert and oriented. Affect was congruent with reported mood, appearing anxious when discussing work pressures. Speech was clear and goal-directed. No psychomotor agitation or retardation was observed.'
-  );
-  const [assessment, setAssessment] = useState(
-    'Client continues to exhibit symptoms consistent with Generalized Anxiety Disorder, triggered by'
-  );
+
+  // SOAP fields
+  const [subjective, setSubjective] = useState('');
+  const [objective, setObjective] = useState('');
+  const [assessment, setAssessment] = useState('');
   const [plan, setPlan] = useState('');
+
+  // DARE fields
+  const [description, setDescription] = useState('');
+  const [action, setAction] = useState('');
+  const [response, setResponse] = useState('');
+  const [evaluation, setEvaluation] = useState('');
+
+  // Fetch session data, transcript, and notes
+  useEffect(() => {
+    async function loadSessionData() {
+      if (!sessionId) return;
+
+      try {
+        setIsLoading(true);
+
+        // Fetch session details
+        const sessionResponse = await api.getSession(sessionId);
+        setSession(sessionResponse.session);
+
+        // Fetch transcript segments if available
+        if (sessionResponse.session.transcription_status === 'completed') {
+          try {
+            const transcriptResponse = await api.getTranscriptSegments(sessionId);
+            setTranscriptSegments(transcriptResponse.segments || []);
+          } catch (err) {
+            console.error('Failed to load transcript:', err);
+          }
+        }
+
+        // Try to fetch existing notes for this session
+        try {
+          const noteResponse = await api.getSessionNotes(sessionId);
+          if (noteResponse.notes && noteResponse.notes.length > 0) {
+            // Use the first note if multiple exist
+            const note = noteResponse.notes[0];
+            setExistingNote(note);
+            setNoteType(note.type);
+
+            // Populate fields based on note type
+            if (note.type === 'soap') {
+              setSubjective(note.subjective || '');
+              setObjective(note.objective || '');
+              setAssessment(note.assessment || '');
+              setPlan(note.plan || '');
+            } else {
+              setDescription(note.description || '');
+              setAction(note.action || '');
+              setResponse(note.response || '');
+              setEvaluation(note.evaluation || '');
+            }
+          }
+        } catch (err) {
+          // No existing note is fine
+          console.log('No existing note found');
+        }
+
+      } catch (err) {
+        console.error('Failed to load session data:', err);
+        alert('Failed to load session data. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadSessionData();
+  }, [sessionId]);
+
+  // Format milliseconds to MM:SS
+  const formatTime = (milliseconds: number) => {
+    const totalSeconds = Math.floor(milliseconds / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  };
+
+  // Format date
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  // Calculate duration in minutes
+  const getDurationMinutes = (duration: number) => {
+    return Math.round(duration / 60);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader className="w-8 h-8 text-blue-600 animate-spin" />
+        <span className="ml-3 text-gray-600">Loading session data...</span>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen">
+        <p className="text-gray-600 mb-4">Session not found</p>
+        <button onClick={() => navigate(-1)} className="btn-primary">
+          Go Back
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -73,35 +188,47 @@ export function ClinicalNotes() {
             </h2>
             <div className="flex items-center gap-2 text-sm text-gray-600 mt-2">
               <Clock className="w-4 h-4" />
-              October 26, 2023 - 45 min duration
+              {formatDate(session.date)} - {getDurationMinutes(session.duration)} min duration
             </div>
           </div>
 
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
-            {mockTranscript.map((segment) => (
-              <div
-                key={segment.id}
-                className={`${
-                  segment.speaker === 'therapist'
-                    ? 'bg-blue-50 border-l-4 border-blue-600'
-                    : 'bg-gray-50 border-l-4 border-gray-300'
-                } p-4 rounded-r-lg`}
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <span
-                    className={`text-xs font-semibold uppercase ${
-                      segment.speaker === 'therapist'
-                        ? 'text-blue-700'
-                        : 'text-gray-700'
-                    }`}
-                  >
-                    {segment.speaker === 'therapist' ? 'Therapist' : 'Client'}
-                  </span>
-                  <span className="text-xs text-gray-500">{segment.time}</span>
+            {session.transcription_status === 'completed' && transcriptSegments.length > 0 ? (
+              transcriptSegments.map((segment) => (
+                <div
+                  key={segment.id}
+                  className={`${
+                    segment.speaker === 'therapist'
+                      ? 'bg-blue-50 border-l-4 border-blue-600'
+                      : 'bg-gray-50 border-l-4 border-gray-300'
+                  } p-4 rounded-r-lg`}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <span
+                      className={`text-xs font-semibold uppercase ${
+                        segment.speaker === 'therapist'
+                          ? 'text-blue-700'
+                          : 'text-gray-700'
+                      }`}
+                    >
+                      {segment.speaker === 'therapist' ? 'Therapist' : 'Client'}
+                    </span>
+                    <span className="text-xs text-gray-500">{formatTime(segment.start_time)}</span>
+                  </div>
+                  <p className="text-sm text-gray-900">{segment.text}</p>
                 </div>
-                <p className="text-sm text-gray-900">{segment.text}</p>
+              ))
+            ) : session.transcription_status === 'in_progress' ? (
+              <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+                <Loader className="w-8 h-8 mb-3 animate-spin" />
+                <p>Transcription in progress...</p>
               </div>
-            ))}
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+                <FileText className="w-12 h-12 mb-3" />
+                <p>No transcript available yet</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -113,7 +240,7 @@ export function ClinicalNotes() {
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-center justify-between mb-4">
               <h1 className="text-2xl font-bold text-gray-900">
-                Client: Jane Doe - Session Note
+                Client: {session.first_name} {session.last_name} - Session Note
               </h1>
               <div className="flex items-center gap-2 text-green-600 bg-green-50 px-3 py-1 rounded-full text-sm">
                 <Lock className="w-4 h-4" />
@@ -124,9 +251,15 @@ export function ClinicalNotes() {
             <div className="flex items-center gap-2 text-sm">
               <span className="text-gray-600">Status:</span>
               <span className="font-medium text-gray-900">
-                Draft with unsaved changes
+                {existingNote
+                  ? existingNote.status === 'signed'
+                    ? 'Signed & Finalized'
+                    : existingNote.status === 'final'
+                    ? 'Final (Pending Signature)'
+                    : 'Draft'
+                  : 'New Note'}
               </span>
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+              {!existingNote && <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />}
             </div>
 
             {/* Note Type Tabs */}
@@ -227,6 +360,8 @@ export function ClinicalNotes() {
                       Description
                     </label>
                     <textarea
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
                       className="w-full h-32 input-field resize-none"
                       placeholder="Describe what happened during the session..."
                     />
@@ -238,6 +373,8 @@ export function ClinicalNotes() {
                       Action
                     </label>
                     <textarea
+                      value={action}
+                      onChange={(e) => setAction(e.target.value)}
                       className="w-full h-32 input-field resize-none"
                       placeholder="What actions or interventions were taken..."
                     />
@@ -249,6 +386,8 @@ export function ClinicalNotes() {
                       Response
                     </label>
                     <textarea
+                      value={response}
+                      onChange={(e) => setResponse(e.target.value)}
                       className="w-full h-32 input-field resize-none"
                       placeholder="How the client responded to interventions..."
                     />
@@ -260,6 +399,8 @@ export function ClinicalNotes() {
                       Evaluation
                     </label>
                     <textarea
+                      value={evaluation}
+                      onChange={(e) => setEvaluation(e.target.value)}
                       className="w-full h-32 input-field resize-none"
                       placeholder="Evaluation of session and next steps..."
                     />

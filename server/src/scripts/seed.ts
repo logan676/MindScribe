@@ -47,6 +47,142 @@ async function seed() {
         email: 'chloe.davis@email.com',
         phone: '555-0103',
       },
+      {
+        firstName: 'David',
+        lastName: 'Evans',
+        clientId: 'EVA3462',
+        dateOfBirth: '1985-05-18',
+        email: 'david.evans@email.com',
+        phone: '555-0104',
+      },
+      {
+        firstName: 'Emma',
+        lastName: 'Foster',
+        clientId: 'FOS3463',
+        dateOfBirth: '1990-09-27',
+        email: 'emma.foster@email.com',
+        phone: '555-0105',
+      },
+      {
+        firstName: 'Frank',
+        lastName: 'Garcia',
+        clientId: 'GAR3464',
+        dateOfBirth: '1982-12-03',
+        email: 'frank.garcia@email.com',
+        phone: '555-0106',
+      },
+      {
+        firstName: 'Grace',
+        lastName: 'Harper',
+        clientId: 'HAR3465',
+        dateOfBirth: '1993-02-14',
+        email: 'grace.harper@email.com',
+        phone: '555-0107',
+      },
+      {
+        firstName: 'Henry',
+        lastName: 'Irving',
+        clientId: 'IRV3466',
+        dateOfBirth: '1987-07-20',
+        email: 'henry.irving@email.com',
+        phone: '555-0108',
+      },
+      {
+        firstName: 'Isabella',
+        lastName: 'Johnson',
+        clientId: 'JOH3467',
+        dateOfBirth: '1991-04-11',
+        email: 'isabella.johnson@email.com',
+        phone: '555-0109',
+      },
+      {
+        firstName: 'Jack',
+        lastName: 'Kumar',
+        clientId: 'KUM3468',
+        dateOfBirth: '1994-10-25',
+        email: 'jack.kumar@email.com',
+        phone: '555-0110',
+      },
+      {
+        firstName: 'Katherine',
+        lastName: 'Lee',
+        clientId: 'LEE3469',
+        dateOfBirth: '1989-06-08',
+        email: 'katherine.lee@email.com',
+        phone: '555-0111',
+      },
+      {
+        firstName: 'Liam',
+        lastName: 'Martinez',
+        clientId: 'MAR3470',
+        dateOfBirth: '1986-01-16',
+        email: 'liam.martinez@email.com',
+        phone: '555-0112',
+      },
+      {
+        firstName: 'Maya',
+        lastName: 'Nelson',
+        clientId: 'NEL3471',
+        dateOfBirth: '1992-08-29',
+        email: 'maya.nelson@email.com',
+        phone: '555-0113',
+      },
+      {
+        firstName: 'Noah',
+        lastName: 'O\'Brien',
+        clientId: 'OBR3472',
+        dateOfBirth: '1984-11-07',
+        email: 'noah.obrien@email.com',
+        phone: '555-0114',
+      },
+      {
+        firstName: 'Olivia',
+        lastName: 'Patel',
+        clientId: 'PAT3473',
+        dateOfBirth: '1996-03-19',
+        email: 'olivia.patel@email.com',
+        phone: '555-0115',
+      },
+      {
+        firstName: 'Patrick',
+        lastName: 'Quinn',
+        clientId: 'QUI3474',
+        dateOfBirth: '1983-09-12',
+        email: 'patrick.quinn@email.com',
+        phone: '555-0116',
+      },
+      {
+        firstName: 'Rachel',
+        lastName: 'Robinson',
+        clientId: 'ROB3475',
+        dateOfBirth: '1990-12-24',
+        email: 'rachel.robinson@email.com',
+        phone: '555-0117',
+      },
+      {
+        firstName: 'Samuel',
+        lastName: 'Smith',
+        clientId: 'SMI3476',
+        dateOfBirth: '1988-05-31',
+        email: 'samuel.smith@email.com',
+        phone: '555-0118',
+      },
+      {
+        firstName: 'Taylor',
+        lastName: 'Thompson',
+        clientId: 'THO3477',
+        dateOfBirth: '1991-07-06',
+        email: 'taylor.thompson@email.com',
+        phone: '555-0119',
+      },
+      {
+        firstName: 'Victoria',
+        lastName: 'Williams',
+        clientId: 'WIL3478',
+        dateOfBirth: '1987-02-22',
+        email: 'victoria.williams@email.com',
+        phone: '555-0120',
+      },
     ];
 
     const patientIds = [];
@@ -289,7 +425,7 @@ async function seed() {
     console.log('✅ Database seeded successfully!\n');
     console.log('Test Data Summary:');
     console.log('- 1 clinician user');
-    console.log('- 3 patients');
+    console.log(`- ${patients.length} patients`);
     console.log('- 3 sessions');
     console.log(`- ${transcriptSegments.length} transcript segments`);
     console.log('- 2 clinical notes');
