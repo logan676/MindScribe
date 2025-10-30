@@ -1,0 +1,118 @@
+name: Docker Build & Push to ECR
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:  # Allow manual trigger
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  ECR_REPOSITORY_BACKEND: ${{ secrets.ECR_REPOSITORY_BACKEND }}
+  ECR_REPOSITORY_FRONTEND: ${{ secrets.ECR_REPOSITORY_FRONTEND }}
+
+jobs:
+  build-and-push:
+    name: Build Docker Images and Push to ECR
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔐 Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: 🔑 Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: 📝 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🏷️ Extract metadata (tags, labels)
+        id: meta
+        run: |
+          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "timestamp=$(date +%Y%m%d%H%M%S)" >> $GITHUB_OUTPUT
+
+      # ==================== Build & Push Backend ====================
+      - name: 🐳 Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./server
+          file: ./server/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_BACKEND }}:latest
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_BACKEND }}:${{ steps.meta.outputs.sha_short }}
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_BACKEND }}:${{ steps.meta.outputs.timestamp }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          labels: |
+            org.opencontainers.image.source=${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.created=${{ steps.meta.outputs.timestamp }}
+
+      # ==================== Build & Push Frontend ====================
+      - name: 🐳 Build and push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./client
+          file: ./client/Dockerfile
+          push: true
+          build-args: |
+            VITE_API_URL=${{ secrets.VITE_API_URL || 'http://localhost:3001/api' }}
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_FRONTEND }}:latest
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_FRONTEND }}:${{ steps.meta.outputs.sha_short }}
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_FRONTEND }}:${{ steps.meta.outputs.timestamp }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          labels: |
+            org.opencontainers.image.source=${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.created=${{ steps.meta.outputs.timestamp }}
+
+      # ==================== Summary ====================
+      - name: 📦 Generate build summary
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          SHA_SHORT: ${{ steps.meta.outputs.sha_short }}
+        run: |
+          echo "### 🐳 Docker Images Built & Pushed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Backend Image:**" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "$REGISTRY/${{ env.ECR_REPOSITORY_BACKEND }}:latest" >> $GITHUB_STEP_SUMMARY
+          echo "$REGISTRY/${{ env.ECR_REPOSITORY_BACKEND }}:$SHA_SHORT" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Frontend Image:**" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "$REGISTRY/${{ env.ECR_REPOSITORY_FRONTEND }}:latest" >> $GITHUB_STEP_SUMMARY
+          echo "$REGISTRY/${{ env.ECR_REPOSITORY_FRONTEND }}:$SHA_SHORT" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`$SHA_SHORT\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Ready for ECS deployment!** 🚀" >> $GITHUB_STEP_SUMMARY
+
+      - name: 💬 Comment on commit
+        if: github.event_name == 'push'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const sha = context.payload.after.substring(0, 7);
+            const registry = '${{ steps.login-ecr.outputs.registry }}';
+            github.rest.repos.createCommitComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.sha,
+              body: `## 🐳 Docker Images Built\n\n` +
+                    `**Backend:** \`${registry}/${{ env.ECR_REPOSITORY_BACKEND }}:${sha}\`\n` +
+                    `**Frontend:** \`${registry}/${{ env.ECR_REPOSITORY_FRONTEND }}:${sha}\`\n\n` +
+                    `✅ Images pushed to ECR successfully!`
+            })

@@ -1,0 +1,228 @@
+name: Deploy to AWS ECS
+
+on:
+  workflow_run:
+    workflows: ["Docker Build & Push to ECR"]
+    types:
+      - completed
+    branches: [ main ]
+  workflow_dispatch:  # Allow manual trigger
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  ECS_CLUSTER: ${{ secrets.ECS_CLUSTER }}
+  ECS_SERVICE_BACKEND: ${{ secrets.ECS_SERVICE_BACKEND }}
+  ECS_SERVICE_FRONTEND: ${{ secrets.ECS_SERVICE_FRONTEND }}
+  ECR_REPOSITORY_BACKEND: ${{ secrets.ECR_REPOSITORY_BACKEND }}
+  ECR_REPOSITORY_FRONTEND: ${{ secrets.ECR_REPOSITORY_FRONTEND }}
+
+jobs:
+  deploy:
+    name: Deploy to ECS
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔐 Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: 🔑 Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: 🏷️ Get image tags
+        id: image
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          echo "backend=$REGISTRY/${{ env.ECR_REPOSITORY_BACKEND }}:latest" >> $GITHUB_OUTPUT
+          echo "frontend=$REGISTRY/${{ env.ECR_REPOSITORY_FRONTEND }}:latest" >> $GITHUB_OUTPUT
+
+      # ==================== Deploy Backend ====================
+      - name: 🚀 Deploy backend to ECS
+        id: deploy-backend
+        run: |
+          echo "Updating backend service..."
+
+          # Get current task definition
+          TASK_DEFINITION=$(aws ecs describe-services \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE_BACKEND }} \
+            --query 'services[0].taskDefinition' \
+            --output text)
+
+          # Force new deployment with latest image
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service ${{ env.ECS_SERVICE_BACKEND }} \
+            --force-new-deployment \
+            --no-cli-pager
+
+          echo "✅ Backend deployment initiated"
+          echo "task_definition=$TASK_DEFINITION" >> $GITHUB_OUTPUT
+
+      - name: ⏳ Wait for backend deployment to stabilize
+        run: |
+          echo "Waiting for backend service to become stable (this may take 3-5 minutes)..."
+          aws ecs wait services-stable \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE_BACKEND }}
+          echo "✅ Backend service is stable"
+
+      # ==================== Deploy Frontend ====================
+      - name: 🚀 Deploy frontend to ECS
+        id: deploy-frontend
+        run: |
+          echo "Updating frontend service..."
+
+          # Get current task definition
+          TASK_DEFINITION=$(aws ecs describe-services \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE_FRONTEND }} \
+            --query 'services[0].taskDefinition' \
+            --output text)
+
+          # Force new deployment with latest image
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service ${{ env.ECS_SERVICE_FRONTEND }} \
+            --force-new-deployment \
+            --no-cli-pager
+
+          echo "✅ Frontend deployment initiated"
+          echo "task_definition=$TASK_DEFINITION" >> $GITHUB_OUTPUT
+
+      - name: ⏳ Wait for frontend deployment to stabilize
+        run: |
+          echo "Waiting for frontend service to become stable (this may take 3-5 minutes)..."
+          aws ecs wait services-stable \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE_FRONTEND }}
+          echo "✅ Frontend service is stable"
+
+      # ==================== Health Checks ====================
+      - name: 🏥 Run health checks
+        id: health-check
+        run: |
+          echo "Getting service details..."
+
+          # Get backend task details
+          BACKEND_TASK_ARN=$(aws ecs list-tasks \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service-name ${{ env.ECS_SERVICE_BACKEND }} \
+            --query 'taskArns[0]' \
+            --output text)
+
+          BACKEND_ENI=$(aws ecs describe-tasks \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --tasks $BACKEND_TASK_ARN \
+            --query 'tasks[0].attachments[0].details[?name==`networkInterfaceId`].value' \
+            --output text)
+
+          BACKEND_IP=$(aws ec2 describe-network-interfaces \
+            --network-interface-ids $BACKEND_ENI \
+            --query 'NetworkInterfaces[0].Association.PublicIp' \
+            --output text)
+
+          echo "backend_ip=$BACKEND_IP" >> $GITHUB_OUTPUT
+
+          # Test backend health endpoint
+          echo "Testing backend health endpoint..."
+          HEALTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://$BACKEND_IP:3001/health" || echo "000")
+
+          if [ "$HEALTH_STATUS" = "200" ]; then
+            echo "✅ Backend health check passed"
+            echo "health_status=healthy" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Backend health check failed (HTTP $HEALTH_STATUS)"
+            echo "health_status=unhealthy" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+      # ==================== Summary ====================
+      - name: 📊 Generate deployment summary
+        if: always()
+        env:
+          BACKEND_IP: ${{ steps.health-check.outputs.backend_ip }}
+          HEALTH_STATUS: ${{ steps.health-check.outputs.health_status }}
+        run: |
+          echo "### 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Cluster:** \`${{ env.ECS_CLUSTER }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Services Deployed:**" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Backend (\`${{ env.ECS_SERVICE_BACKEND }}\`)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Frontend (\`${{ env.ECS_SERVICE_FRONTEND }}\`)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Health Check:**" >> $GITHUB_STEP_SUMMARY
+          if [ "$HEALTH_STATUS" = "healthy" ]; then
+            echo "- ✅ Backend API is healthy" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ❌ Backend health check failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Access URLs:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Backend API: \`http://$BACKEND_IP:3001\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Health Check: \`http://$BACKEND_IP:3001/health\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployment completed at:** \`$(date -u '+%Y-%m-%d %H:%M:%S UTC')\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: 💬 Comment deployment status
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          BACKEND_IP: ${{ steps.health-check.outputs.backend_ip }}
+          HEALTH_STATUS: ${{ steps.health-check.outputs.health_status }}
+        with:
+          script: |
+            const status = '${{ job.status }}' === 'success' ? '✅' : '❌';
+            const healthStatus = process.env.HEALTH_STATUS === 'healthy' ? '✅ Healthy' : '❌ Unhealthy';
+            const backendIp = process.env.BACKEND_IP;
+
+            github.rest.repos.createCommitComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.sha,
+              body: `## ${status} ECS Deployment\n\n` +
+                    `**Services:** Backend + Frontend\n` +
+                    `**Cluster:** \`${{ env.ECS_CLUSTER }}\`\n` +
+                    `**Health:** ${healthStatus}\n\n` +
+                    `**URLs:**\n` +
+                    `- Backend: http://${backendIp}:3001\n` +
+                    `- Health: http://${backendIp}:3001/health\n\n` +
+                    `Deployed at: ${new Date().toUTCString()}`
+            })
+
+      # ==================== Rollback on Failure ====================
+      - name: 🔄 Rollback on failure
+        if: failure()
+        run: |
+          echo "⚠️ Deployment failed, initiating rollback..."
+
+          # Rollback backend
+          echo "Rolling back backend to previous task definition..."
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service ${{ env.ECS_SERVICE_BACKEND }} \
+            --task-definition ${{ steps.deploy-backend.outputs.task_definition }} \
+            --force-new-deployment \
+            --no-cli-pager
+
+          # Rollback frontend
+          echo "Rolling back frontend to previous task definition..."
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service ${{ env.ECS_SERVICE_FRONTEND }} \
+            --task-definition ${{ steps.deploy-frontend.outputs.task_definition }} \
+            --force-new-deployment \
+            --no-cli-pager
+
+          echo "✅ Rollback initiated. Previous versions will be restored."
