@@ -1,11 +1,11 @@
-import type { AssemblyAITranscriptResponse } from '../types/index.js';
+import { AssemblyAI } from 'assemblyai';
+import type { Transcript } from 'assemblyai';
 
 export class AssemblyAIService {
-  private apiKey: string;
-  private baseUrl = 'https://api.assemblyai.com/v2';
+  private client: AssemblyAI;
 
   constructor(apiKey: string) {
-    this.apiKey = apiKey;
+    this.client = new AssemblyAI({ apiKey });
   }
 
   /**
@@ -13,22 +13,8 @@ export class AssemblyAIService {
    */
   async uploadAudio(audioBuffer: Buffer): Promise<string> {
     try {
-      const response = await fetch(`${this.baseUrl}/upload`, {
-        method: 'POST',
-        headers: {
-          authorization: this.apiKey,
-          'Content-Type': 'application/octet-stream',
-        },
-        body: audioBuffer,
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(`Failed to upload audio: ${error.error}`);
-      }
-
-      const data = await response.json();
-      return data.upload_url;
+      const uploadUrl = await this.client.files.upload(audioBuffer);
+      return uploadUrl;
     } catch (error) {
       console.error('Error uploading audio:', error);
       throw error;
@@ -40,28 +26,15 @@ export class AssemblyAIService {
    */
   async createTranscript(audioUrl: string): Promise<string> {
     try {
-      const response = await fetch(`${this.baseUrl}/transcript`, {
-        method: 'POST',
-        headers: {
-          authorization: this.apiKey,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          audio_url: audioUrl,
-          speaker_labels: true, // Enable speaker diarization
-          punctuate: true,
-          format_text: true,
-          language_code: 'en',
-        }),
+      const transcript = await this.client.transcripts.transcribe({
+        audio: audioUrl,
+        speaker_labels: true, // Enable speaker diarization
+        punctuate: true,
+        format_text: true,
+        language_code: 'en',
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(`Failed to create transcript: ${error.error}`);
-      }
-
-      const data = await response.json();
-      return data.id;
+      return transcript.id;
     } catch (error) {
       console.error('Error creating transcript:', error);
       throw error;
@@ -71,30 +44,10 @@ export class AssemblyAIService {
   /**
    * Get transcription status and result
    */
-  async getTranscript(transcriptId: string): Promise<AssemblyAITranscriptResponse> {
+  async getTranscript(transcriptId: string): Promise<Transcript> {
     try {
-      const response = await fetch(`${this.baseUrl}/transcript/${transcriptId}`, {
-        method: 'GET',
-        headers: {
-          authorization: this.apiKey,
-        },
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(`Failed to get transcript: ${error.error}`);
-      }
-
-      const data = await response.json();
-
-      return {
-        id: data.id,
-        status: data.status,
-        text: data.text,
-        words: data.words,
-        utterances: data.utterances,
-        error: data.error,
-      };
+      const transcript = await this.client.transcripts.get(transcriptId);
+      return transcript;
     } catch (error) {
       console.error('Error getting transcript:', error);
       throw error;
@@ -107,45 +60,45 @@ export class AssemblyAIService {
   async pollTranscript(
     transcriptId: string,
     onProgress?: (status: string) => void
-  ): Promise<AssemblyAITranscriptResponse> {
-    let result = await this.getTranscript(transcriptId);
+  ): Promise<Transcript> {
+    let transcript = await this.getTranscript(transcriptId);
 
-    while (result.status === 'queued' || result.status === 'processing') {
+    while (transcript.status === 'queued' || transcript.status === 'processing') {
       if (onProgress) {
-        onProgress(result.status);
+        onProgress(transcript.status);
       }
 
       // Wait 3 seconds before polling again
       await new Promise((resolve) => setTimeout(resolve, 3000));
-      result = await this.getTranscript(transcriptId);
+      transcript = await this.getTranscript(transcriptId);
     }
 
-    if (result.status === 'error') {
-      throw new Error(`Transcription failed: ${result.error}`);
+    if (transcript.status === 'error') {
+      throw new Error(`Transcription failed: ${transcript.error}`);
     }
 
-    return result;
+    return transcript;
   }
 
   /**
    * Process transcript utterances for database storage
    */
-  processUtterances(transcript: AssemblyAITranscriptResponse): Array<{
+  processUtterances(transcript: Transcript): Array<{
     speaker: string;
     text: string;
     startTime: number;
     endTime: number;
     confidence: number;
   }> {
-    if (!transcript.utterances) {
+    if (!transcript.utterances || transcript.utterances.length === 0) {
       return [];
     }
 
     return transcript.utterances.map((utterance) => ({
       speaker: utterance.speaker === 'A' ? 'therapist' : 'client',
       text: utterance.text,
-      startTime: utterance.start,
-      endTime: utterance.end,
+      startTime: utterance.start / 1000, // Convert from milliseconds to seconds
+      endTime: utterance.end / 1000, // Convert from milliseconds to seconds
       confidence: utterance.confidence,
     }));
   }
