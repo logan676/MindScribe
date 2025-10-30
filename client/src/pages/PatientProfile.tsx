@@ -269,7 +269,7 @@ export function PatientProfile() {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                        Session ID
+                        Session #
                       </th>
                       <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
                         Date
@@ -283,14 +283,17 @@ export function PatientProfile() {
                       <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
                         Status
                       </th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
+                        Transcription
+                      </th>
                       <th className="px-6 py-3"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {sessions.map((session) => (
+                    {sessions.map((session, index) => (
                       <tr key={session.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                          #{session.session_id}
+                          #{sessions.length - index}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-600">
                           {formatDate(session.date)}
@@ -302,6 +305,33 @@ export function PatientProfile() {
                           {Math.round(session.duration / 60)} min
                         </td>
                         <td className="px-6 py-4">{getStatusBadge(session.status)}</td>
+                        <td className="px-6 py-4">
+                          {session.transcription_status === 'completed' && (
+                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                              Ready
+                            </span>
+                          )}
+                          {session.transcription_status === 'in_progress' && (
+                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                              Processing
+                            </span>
+                          )}
+                          {session.transcription_status === 'pending' && (
+                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
+                              Pending
+                            </span>
+                          )}
+                          {session.transcription_status === 'failed' && (
+                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                              Failed
+                            </span>
+                          )}
+                          {!session.transcription_status && (
+                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                              N/A
+                            </span>
+                          )}
+                        </td>
                         <td className="px-6 py-4 text-right">
                           <Link
                             to={`/notes/${session.id}`}
