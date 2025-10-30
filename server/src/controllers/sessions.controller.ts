@@ -247,10 +247,15 @@ export class SessionsController {
     } catch (error) {
       logError(error as Error, { method: 'startTranscriptionAsync', sessionId });
 
-      // Update status to failed
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+      // Update status to failed with error message
       await pool.query(
-        `UPDATE sessions SET transcription_status = 'failed' WHERE id = $1`,
-        [sessionId]
+        `UPDATE sessions
+         SET transcription_status = 'failed',
+             transcription_error = $1
+         WHERE id = $2`,
+        [errorMessage, sessionId]
       );
     }
   }

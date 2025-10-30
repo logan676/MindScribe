@@ -4,6 +4,7 @@ import { Layout } from "./components/layout/Layout";
 import { Dashboard } from "./pages/Dashboard";
 import { SessionRecording } from "./pages/SessionRecording";
 import { NewSession } from "./pages/NewSession";
+import { SessionStatus } from "./pages/SessionStatus";
 import { Sessions } from "./pages/Sessions";
 import { ClinicalNotes } from "./pages/ClinicalNotes";
 import { PatientProfile } from "./pages/PatientProfile";
@@ -35,6 +36,7 @@ function App() {
               <Route index element={<Sessions />} />
               <Route path="new" element={<NewSession />} />
               <Route path=":sessionId" element={<SessionRecording />} />
+              <Route path="status/:sessionId" element={<SessionStatus />} />
             </Route>
             <Route path="notes">
               <Route path="new" element={<ClinicalNotes />} />

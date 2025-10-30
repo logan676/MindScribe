@@ -4,8 +4,8 @@ import { Header } from './Header';
 export function Layout() {
   // TODO: Get user from auth context
   const user = {
-    name: 'Dr. Smith',
-    avatarUrl: undefined,
+    name: 'Dr. Evelyn Reed',
+    avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Evelyn',
   };
 
   return (

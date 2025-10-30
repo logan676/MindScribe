@@ -1,0 +1,287 @@
+import { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { CheckCircle, Clock, Loader, ArrowLeft, FileAudio, Brain, FileText } from 'lucide-react';
+import { api } from '../services/api';
+
+interface Session {
+  id: string;
+  patient_id: string;
+  first_name: string;
+  last_name: string;
+  client_id: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  duration: number;
+  status: string;
+  transcription_status: string;
+  transcription_error: string | null;
+  audio_file_path: string | null;
+  recording_path: string | null;
+  created_at: string;
+}
+
+export function SessionStatus() {
+  const { sessionId } = useParams();
+  const navigate = useNavigate();
+  const [session, setSession] = useState<Session | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadSession() {
+      if (!sessionId) return;
+
+      try {
+        const response = await api.getSession(sessionId);
+        setSession(response.session);
+      } catch (err) {
+        console.error('Failed to load session:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadSession();
+
+    // Poll for status updates every 5 seconds
+    const interval = setInterval(loadSession, 5000);
+
+    return () => clearInterval(interval);
+  }, [sessionId]);
+
+  if (isLoading) {
+    return (
+      <div className="max-w-4xl mx-auto">
+        <div className="flex items-center justify-center h-64">
+          <Loader className="w-8 h-8 text-blue-600 animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center py-12">
+          <p className="text-gray-600 mb-4">Session not found</p>
+          <button onClick={() => navigate('/patients')} className="btn-primary">
+            Go to Patients
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return <CheckCircle className="w-8 h-8 text-green-600" />;
+      case 'in_progress':
+      case 'processing':
+        return <Loader className="w-8 h-8 text-blue-600 animate-spin" />;
+      case 'pending':
+        return <Clock className="w-8 h-8 text-yellow-600" />;
+      default:
+        return <Clock className="w-8 h-8 text-gray-400" />;
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'Completed';
+      case 'in_progress':
+        return 'In Progress';
+      case 'processing':
+        return 'Processing';
+      case 'pending':
+        return 'Pending';
+      case 'failed':
+        return 'Failed';
+      default:
+        return status;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'text-green-600 bg-green-50';
+      case 'in_progress':
+      case 'processing':
+        return 'text-blue-600 bg-blue-50';
+      case 'pending':
+        return 'text-yellow-600 bg-yellow-50';
+      case 'failed':
+        return 'text-red-600 bg-red-50';
+      default:
+        return 'text-gray-600 bg-gray-50';
+    }
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto">
+      {/* Header */}
+      <button
+        onClick={() => navigate('/patients')}
+        className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Back to Patients
+      </button>
+
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Session Status</h1>
+        <p className="text-gray-600">
+          {session.first_name} {session.last_name} - Session #{sessionId.slice(-6)}
+        </p>
+      </div>
+
+      {/* Status Overview Card */}
+      <div className="card p-6 mb-6">
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Upload Complete ✓</h2>
+
+        <div className="space-y-4">
+          {/* Recording Info */}
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <FileAudio className="w-6 h-6 text-blue-600 mt-1" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 mb-1">Recording Uploaded</h3>
+                <p className="text-sm text-gray-600">Audio file has been successfully uploaded to the server</p>
+                {session.audio_file_path && (
+                  <p className="text-xs text-gray-500 mt-1 font-mono">{session.audio_file_path}</p>
+                )}
+              </div>
+              <CheckCircle className="w-5 h-5 text-green-600" />
+            </div>
+          </div>
+
+          {/* Session Status */}
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <div className="mt-1">{getStatusIcon(session.status)}</div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 mb-1">Session Status</h3>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-sm text-gray-600">Current Status:</span>
+                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(session.status)}`}>
+                    {getStatusText(session.status)}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600">
+                  Session created at {new Date(session.created_at).toLocaleString()}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Transcription Status */}
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <Brain className="w-6 h-6 text-purple-600 mt-1" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 mb-1">Backend Processing</h3>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-sm text-gray-600">Transcription Status:</span>
+                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(session.transcription_status)}`}>
+                    {getStatusText(session.transcription_status)}
+                  </span>
+                </div>
+                {session.transcription_status === 'pending' && (
+                  <p className="text-sm text-gray-600">Waiting for backend to start processing...</p>
+                )}
+                {session.transcription_status === 'in_progress' && (
+                  <p className="text-sm text-gray-600">Backend is currently transcribing your session...</p>
+                )}
+                {session.transcription_status === 'completed' && (
+                  <p className="text-sm text-gray-600">Transcription completed successfully!</p>
+                )}
+                {session.transcription_status === 'failed' && (
+                  <div className="space-y-2">
+                    <p className="text-sm text-red-600 font-semibold">Transcription failed. Please try again.</p>
+                    {session.transcription_error && (
+                      <div className="bg-red-50 border border-red-200 rounded p-3">
+                        <p className="text-xs text-red-700 font-mono">{session.transcription_error}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              {session.transcription_status === 'in_progress' && (
+                <Loader className="w-5 h-5 text-purple-600 animate-spin" />
+              )}
+              {session.transcription_status === 'completed' && (
+                <CheckCircle className="w-5 h-5 text-green-600" />
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Debug Information Card */}
+      <div className="card p-6 mb-6">
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Debug Information</h2>
+
+        <div className="bg-gray-900 text-gray-100 rounded-lg p-4 font-mono text-sm overflow-x-auto">
+          <pre>{JSON.stringify(session, null, 2)}</pre>
+        </div>
+      </div>
+
+      {/* Next Steps */}
+      <div className="card p-6">
+        <h2 className="text-xl font-bold text-gray-900 mb-4">What Happens Next?</h2>
+
+        <div className="space-y-3">
+          <div className="flex items-start gap-3">
+            <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-bold flex-shrink-0">1</div>
+            <div>
+              <p className="font-semibold text-gray-900">Backend Processing</p>
+              <p className="text-sm text-gray-600">The server will process your audio file and generate a transcription using AssemblyAI</p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3">
+            <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-bold flex-shrink-0">2</div>
+            <div>
+              <p className="font-semibold text-gray-900">AI Note Generation</p>
+              <p className="text-sm text-gray-600">Once transcription is complete, AI will generate clinical notes (SOAP/DARE format)</p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3">
+            <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-bold flex-shrink-0">3</div>
+            <div>
+              <p className="font-semibold text-gray-900">Review & Edit</p>
+              <p className="text-sm text-gray-600">You can review, edit, and finalize the notes in the Clinical Notes page</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <p className="text-sm text-gray-600 mb-4">
+            💡 <strong>Tip:</strong> This page auto-refreshes every 5 seconds. You can navigate away and check back later.
+          </p>
+
+          <div className="flex gap-3">
+            <button
+              onClick={() => navigate('/patients')}
+              className="btn-secondary"
+            >
+              Go to Patients
+            </button>
+            {session.transcription_status === 'completed' && (
+              <button
+                onClick={() => navigate(`/notes/${sessionId}`)}
+                className="btn-primary flex items-center gap-2"
+              >
+                <FileText className="w-4 h-4" />
+                View Clinical Notes
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

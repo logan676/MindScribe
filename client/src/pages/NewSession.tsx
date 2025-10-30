@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Mic, Pause, Play, Square, CheckCircle, Loader, User, Calendar, ArrowLeft } from 'lucide-react';
+import { Mic, Pause, Play, Square, Loader, User, Calendar, ArrowLeft, Headphones } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAudioRecorder } from '../hooks/useAudioRecorder';
+import { useAudioRecorder, type AudioDevice } from '../hooks/useAudioRecorder';
 import { api } from '../services/api';
 import { formatDuration } from '../lib/utils';
 
-type ProcessingStep = 'uploading' | 'processing' | 'transcribing' | 'complete';
 
 interface Patient {
   id: string;
@@ -22,11 +21,30 @@ export function NewSession() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionType, setSessionType] = useState<string>('follow-up');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [processingStep, setProcessingStep] = useState<ProcessingStep>('uploading');
   const [showPatientSelect, setShowPatientSelect] = useState(true);
+  const [waveformKey, setWaveformKey] = useState(0);
 
-  const { state, startRecording, pauseRecording, resumeRecording, stopRecording, error } =
+  // Audio device selection
+  const [audioDevices, setAudioDevices] = useState<AudioDevice[]>([]);
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string>('');
+  const [isLoadingDevices, setIsLoadingDevices] = useState(false);
+
+  // Confirmation modal
+  const [showStopConfirmation, setShowStopConfirmation] = useState(false);
+
+  const { state, debugInfo, startRecording, pauseRecording, resumeRecording, stopRecording, getAudioDevices, error } =
     useAudioRecorder();
+
+  // Force waveform to re-render more frequently for smooth animation
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (state.isRecording && !state.isPaused) {
+      interval = setInterval(() => {
+        setWaveformKey(prev => prev + 1);
+      }, 50); // Update every 50ms for smooth animation
+    }
+    return () => clearInterval(interval);
+  }, [state.isRecording, state.isPaused]);
 
   // Fetch patients on mount
   useEffect(() => {
@@ -43,6 +61,26 @@ export function NewSession() {
     loadPatients();
   }, []);
 
+  // Load audio devices on mount
+  useEffect(() => {
+    async function loadAudioDevices() {
+      setIsLoadingDevices(true);
+      try {
+        const devices = await getAudioDevices();
+        setAudioDevices(devices);
+        // Auto-select the first device if available
+        if (devices.length > 0) {
+          setSelectedDeviceId(devices[0].deviceId);
+        }
+      } catch (err) {
+        console.error('Failed to load audio devices:', err);
+      } finally {
+        setIsLoadingDevices(false);
+      }
+    }
+    loadAudioDevices();
+  }, [getAudioDevices]);
+
   const selectedPatient = patients.find((p) => p.id === selectedPatientId);
 
   const handleStartSession = async () => {
@@ -51,21 +89,39 @@ export function NewSession() {
       return;
     }
 
+    if (!selectedDeviceId && audioDevices.length > 0) {
+      alert('Please select a microphone first');
+      return;
+    }
+
     try {
+      console.log('🎯 Creating session for patient:', selectedPatientId);
+
       // Create session
       const response = await api.createSession(selectedPatientId);
+      console.log('✅ Session created:', response.sessionId);
+
       setSessionId(response.sessionId);
       setShowPatientSelect(false);
 
-      // Start recording
-      await startRecording();
+      // Start recording with selected device
+      console.log('🎬 Starting recording with device:', selectedDeviceId || 'default');
+      await startRecording(selectedDeviceId || undefined);
+      console.log('✅ Recording started successfully');
     } catch (err) {
-      console.error('Failed to create session:', err);
-      alert('Failed to start session. Please try again.');
+      console.error('❌ Failed to create session:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to start session';
+      alert(`Failed to start session: ${errorMessage}`);
     }
   };
 
-  const handleStopRecording = async () => {
+  const handleStopClick = () => {
+    setShowStopConfirmation(true);
+  };
+
+  const handleConfirmStop = async () => {
+    setShowStopConfirmation(false);
+
     if (!sessionId) {
       alert('Session not created yet. Please try again.');
       return;
@@ -79,38 +135,34 @@ export function NewSession() {
         throw new Error('No audio data recorded');
       }
 
-      // Start processing
+      // Show uploading state
       setIsProcessing(true);
-      setProcessingStep('uploading');
+
+      console.log('📤 Uploading recording...', {
+        sessionId,
+        blobSize: audioBlob.size,
+        blobType: audioBlob.type,
+      });
 
       // Upload to backend
-      await api.uploadRecording(sessionId, audioBlob);
+      try {
+        await api.uploadRecording(sessionId, audioBlob);
+        console.log('✅ Upload successful');
+      } catch (uploadErr) {
+        console.error('❌ Upload failed:', uploadErr);
+        throw new Error(`Upload failed: ${uploadErr instanceof Error ? uploadErr.message : 'Unknown error'}`);
+      }
 
-      // Simulate progress (in production, poll the backend for actual status)
-      setProcessingStep('processing');
-      setTimeout(() => setProcessingStep('transcribing'), 3000);
-      setTimeout(() => {
-        setProcessingStep('complete');
-        // Navigate to notes page after a short delay
-        setTimeout(() => navigate(`/notes/${sessionId}`), 2000);
-      }, 8000);
+      // Navigate to session status page
+      // The backend should automatically start transcription after upload
+      console.log('🎯 Navigating to status page');
+      console.log('💡 Backend should automatically process transcription');
+      navigate(`/sessions/status/${sessionId}`);
     } catch (err) {
-      console.error('Failed to stop and upload recording:', err);
-      alert('Failed to upload recording. Please try again.');
+      console.error('❌ Failed to stop and upload recording:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to upload recording. Please try again.';
+      alert(errorMessage);
       setIsProcessing(false);
-    }
-  };
-
-  const getProcessingMessage = () => {
-    switch (processingStep) {
-      case 'uploading':
-        return 'Uploading recording...';
-      case 'processing':
-        return 'Processing audio...';
-      case 'transcribing':
-        return 'Transcribing session...';
-      case 'complete':
-        return 'Complete! Redirecting to notes...';
     }
   };
 
@@ -155,6 +207,36 @@ export function NewSession() {
                 ))}
               </select>
             </div>
+          </div>
+
+          {/* Microphone Selection */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-900 mb-2">
+              Select Microphone
+            </label>
+            <div className="relative">
+              <Headphones className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <select
+                value={selectedDeviceId}
+                onChange={(e) => setSelectedDeviceId(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
+                disabled={isLoadingDevices}
+              >
+                <option value="">
+                  {isLoadingDevices ? 'Loading microphones...' : audioDevices.length === 0 ? 'No microphones found' : 'Choose a microphone...'}
+                </option>
+                {audioDevices.map((device) => (
+                  <option key={device.deviceId} value={device.deviceId}>
+                    {device.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {audioDevices.length > 0 && (
+              <p className="mt-2 text-xs text-gray-500">
+                💡 If you're using external earphones/headphones with a mic, select them above
+              </p>
+            )}
           </div>
 
           {/* Session Type */}
@@ -245,79 +327,12 @@ export function NewSession() {
   if (isProcessing) {
     return (
       <div className="max-w-2xl mx-auto">
-        {/* Back Button */}
-        <button
-          onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back
-        </button>
-
         <div className="bg-white rounded-lg shadow-sm p-12 text-center">
           <div className="mb-6">
-            {processingStep === 'complete' ? (
-              <CheckCircle className="w-20 h-20 text-green-500 mx-auto" />
-            ) : (
-              <Loader className="w-20 h-20 text-blue-600 mx-auto animate-spin" />
-            )}
+            <Loader className="w-20 h-20 text-blue-600 mx-auto animate-spin" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">{getProcessingMessage()}</h2>
-          <p className="text-gray-600 mb-6">Please wait while we process your recording</p>
-
-          {/* Processing Steps */}
-          <div className="flex justify-center items-center gap-4 mb-8">
-            <div
-              className={`flex items-center gap-2 ${
-                processingStep === 'uploading' ? 'text-blue-600' : 'text-green-600'
-              }`}
-            >
-              {processingStep === 'uploading' ? (
-                <Loader className="w-4 h-4 animate-spin" />
-              ) : (
-                <CheckCircle className="w-4 h-4" />
-              )}
-              <span className="text-sm font-medium">Upload</span>
-            </div>
-            <div className="w-12 h-px bg-gray-300" />
-            <div
-              className={`flex items-center gap-2 ${
-                processingStep === 'processing'
-                  ? 'text-blue-600'
-                  : ['transcribing', 'complete'].includes(processingStep)
-                  ? 'text-green-600'
-                  : 'text-gray-400'
-              }`}
-            >
-              {processingStep === 'processing' ? (
-                <Loader className="w-4 h-4 animate-spin" />
-              ) : ['transcribing', 'complete'].includes(processingStep) ? (
-                <CheckCircle className="w-4 h-4" />
-              ) : (
-                <div className="w-4 h-4 rounded-full border-2 border-current" />
-              )}
-              <span className="text-sm font-medium">Process</span>
-            </div>
-            <div className="w-12 h-px bg-gray-300" />
-            <div
-              className={`flex items-center gap-2 ${
-                processingStep === 'transcribing'
-                  ? 'text-blue-600'
-                  : processingStep === 'complete'
-                  ? 'text-green-600'
-                  : 'text-gray-400'
-              }`}
-            >
-              {processingStep === 'transcribing' ? (
-                <Loader className="w-4 h-4 animate-spin" />
-              ) : processingStep === 'complete' ? (
-                <CheckCircle className="w-4 h-4" />
-              ) : (
-                <div className="w-4 h-4 rounded-full border-2 border-current" />
-              )}
-              <span className="text-sm font-medium">Transcribe</span>
-            </div>
-          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Uploading Recording...</h2>
+          <p className="text-gray-600">Please wait while we upload your recording to the server</p>
         </div>
       </div>
     );
@@ -360,47 +375,55 @@ export function NewSession() {
           </div>
         </div>
 
-        {/* Waveform Visualization */}
+        {/* Waveform Visualization - Shows real-time audio input */}
         <div className="bg-gray-50 rounded-lg p-6 mb-8 h-32 flex items-center justify-center">
           {state.isRecording && !state.isPaused ? (
-            <div className="flex items-center gap-1 h-full">
-              {Array.from({ length: 40 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="w-1 bg-blue-500 rounded-full transition-all duration-150"
-                  style={{
-                    height: `${Math.random() * 60 + 20}%`,
-                    opacity: 0.3 + Math.random() * 0.7,
-                  }}
-                />
-              ))}
+            <div className="flex items-center gap-1 h-full" key={waveformKey}>
+              {Array.from({ length: 50 }).map((_, i) => {
+                // Create a wave effect based on audio level and position
+                const time = waveformKey * 0.1;
+                const phase = (time + i * 0.3) % (Math.PI * 2);
+
+                // Base wave animation (subtle when no sound)
+                const baseHeight = 8 + Math.sin(phase) * 6;
+
+                // Audio boost - scale the audio level more carefully
+                // Normalize audioLevel (0-100) to a reasonable multiplier (0-3)
+                const normalizedAudio = Math.min(100, state.audioLevel) / 100;
+                const audioBoost = normalizedAudio * 70; // Max additional height of 70%
+
+                // Add some randomness based on position for more natural look
+                const positionVariance = Math.sin(i * 0.5 + phase) * normalizedAudio * 10;
+
+                const height = Math.min(95, baseHeight + audioBoost + positionVariance);
+
+                // Color intensity based on audio level
+                const isActive = state.audioLevel > 5;
+
+                return (
+                  <div
+                    key={i}
+                    className="w-1 rounded-full transition-all duration-75"
+                    style={{
+                      height: `${height}%`,
+                      opacity: isActive ? 0.7 + (normalizedAudio * 0.3) : 0.4,
+                      backgroundColor: isActive ? '#3b82f6' : '#93c5fd',
+                      boxShadow: isActive ? '0 0 4px rgba(59, 130, 246, 0.5)' : 'none',
+                    }}
+                  />
+                );
+              })}
             </div>
           ) : (
-            <div className="text-gray-400">Audio waveform will appear here</div>
+            <div className="text-gray-400">Audio waveform will appear when recording starts</div>
           )}
         </div>
 
-        {/* Audio Level Indicator */}
-        {state.isRecording && !state.isPaused && (
-          <div className="mb-6">
-            <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
-              <span>Audio Level</span>
-              <span>{Math.round(state.audioLevel * 100)}%</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-              <div
-                className="bg-green-500 h-full transition-all duration-100"
-                style={{ width: `${state.audioLevel * 100}%` }}
-              />
-            </div>
-          </div>
-        )}
-
         {/* Controls */}
-        <div className="flex items-center justify-center gap-4">
+        <div className="flex items-center justify-center gap-4 mb-6">
           {!state.isRecording && !state.isPaused && (
             <button
-              onClick={startRecording}
+              onClick={() => startRecording(selectedDeviceId || undefined)}
               className="w-20 h-20 bg-red-600 hover:bg-red-700 rounded-full flex items-center justify-center text-white transition-colors shadow-lg"
             >
               <Mic className="w-8 h-8" />
@@ -416,7 +439,7 @@ export function NewSession() {
                 <Pause className="w-6 h-6" />
               </button>
               <button
-                onClick={handleStopRecording}
+                onClick={handleStopClick}
                 className="w-20 h-20 bg-red-600 hover:bg-red-700 rounded-full flex items-center justify-center text-white transition-colors shadow-lg"
               >
                 <Square className="w-8 h-8" />
@@ -433,7 +456,7 @@ export function NewSession() {
                 <Play className="w-6 h-6" />
               </button>
               <button
-                onClick={handleStopRecording}
+                onClick={handleStopClick}
                 className="w-16 h-16 bg-red-600 hover:bg-red-700 rounded-full flex items-center justify-center text-white transition-colors shadow-lg"
               >
                 <Square className="w-6 h-6" />
@@ -443,7 +466,7 @@ export function NewSession() {
         </div>
 
         {/* Control Labels */}
-        <div className="flex items-center justify-center gap-8 mt-4 text-sm text-gray-600">
+        <div className="flex items-center justify-center gap-8 mb-6 text-sm text-gray-600">
           {!state.isRecording && !state.isPaused && <span>Click to start recording</span>}
           {state.isRecording && !state.isPaused && (
             <>
@@ -459,6 +482,67 @@ export function NewSession() {
           )}
         </div>
 
+        {/* Recording Status Panel */}
+        <div className="mb-6 bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+          <h3 className="text-sm font-bold text-blue-900 mb-3 flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+            Recording Status
+          </h3>
+          <div className="grid grid-cols-2 gap-3 text-xs">
+            <div className="bg-white p-2 rounded">
+              <div className="text-gray-500 mb-1">Microphone Access</div>
+              <div className={`font-bold ${debugInfo.hasPermission ? 'text-green-600' : 'text-red-600'}`}>
+                {debugInfo.hasPermission ? '✓ Connected' : '✗ Not Connected'}
+              </div>
+            </div>
+            <div className="bg-white p-2 rounded">
+              <div className="text-gray-500 mb-1">Recording Status</div>
+              <div className={`font-bold ${debugInfo.streamActive ? 'text-green-600' : 'text-gray-600'}`}>
+                {debugInfo.streamActive ? '● Recording' : '○ Not Recording'}
+              </div>
+            </div>
+            <div className="bg-white p-2 rounded">
+              <div className="text-gray-500 mb-1">Audio Quality</div>
+              <div className="font-bold text-gray-900">
+                {debugInfo.sampleRate ? `${(debugInfo.sampleRate / 1000).toFixed(0)} kHz` : 'N/A'}
+              </div>
+            </div>
+            <div className="bg-white p-2 rounded">
+              <div className="text-gray-500 mb-1">Recording Size</div>
+              <div className="font-bold text-purple-600">
+                {(debugInfo.totalSize / 1024).toFixed(2)} KB
+              </div>
+            </div>
+            <div className="bg-white p-2 rounded col-span-2">
+              <div className="text-gray-500 mb-1">Voice Detection</div>
+              <div className={`font-semibold ${
+                state.audioLevel > 5 ? 'text-green-600' : state.audioLevel > 0.5 ? 'text-yellow-600' : 'text-gray-500'
+              }`}>
+                {state.audioLevel > 5 ? '🔊 Voice detected!' : state.audioLevel > 0.5 ? '🔉 Weak sound' : '🔇 No sound'}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Low Audio Warning - Fixed position notification (only after 15 seconds) */}
+        {state.isRecording && !state.isPaused && state.audioLevel < 1 && state.duration > 15 && (
+          <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 animate-slide-down">
+            <div className="bg-yellow-100 border-2 border-yellow-400 rounded-lg shadow-lg p-4 max-w-md">
+              <div className="flex items-start gap-3">
+                <div className="text-2xl">⚠️</div>
+                <div>
+                  <h4 className="font-bold text-yellow-900 mb-2">Microphone Not Picking Up Sound</h4>
+                  <div className="text-xs text-yellow-800 space-y-1">
+                    <p>• <strong>Speak louder</strong> or move closer to the microphone</p>
+                    <p>• <strong>Check microphone selection</strong> above (scroll up)</p>
+                    <p>• <strong>Verify microphone isn't muted</strong> in system settings</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Error Display */}
         {error && (
           <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
@@ -466,6 +550,46 @@ export function NewSession() {
           </div>
         )}
       </div>
+
+      {/* Stop Confirmation Modal */}
+      {showStopConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+            {/* Warning Icon */}
+            <div className="flex justify-center mb-4">
+              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Title and Message */}
+            <h2 className="text-xl font-bold text-gray-900 text-center mb-2">
+              End Session and Transcribe?
+            </h2>
+            <p className="text-sm text-gray-600 text-center mb-6">
+              This will stop the recording and start the transcription process. You will not be able to restart the recording.
+            </p>
+
+            {/* Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowStopConfirmation(false)}
+                className="flex-1 px-4 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmStop}
+                className="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors"
+              >
+                End Session
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
