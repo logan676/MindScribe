@@ -22,11 +22,26 @@ const upload = multer({
     fileSize: parseInt(process.env.MAX_FILE_SIZE || '500000000'), // 500MB default
   },
   fileFilter: (req, file, cb) => {
-    const allowedMimes = ['audio/webm', 'audio/mp4', 'audio/mpeg', 'audio/wav'];
-    if (allowedMimes.includes(file.mimetype)) {
+    // Allowed MIME types (including multiple M4A variants)
+    const allowedMimes = [
+      'audio/webm',
+      'audio/mp4',
+      'audio/mpeg',
+      'audio/wav',
+      'audio/x-m4a',
+      'audio/m4a',
+      'application/octet-stream', // Some clients send this for audio files
+    ];
+
+    // Allowed file extensions (fallback validation)
+    const allowedExtensions = ['.mp3', '.wav', '.m4a', '.webm', '.mp4'];
+    const fileExtension = path.extname(file.originalname).toLowerCase();
+
+    // Accept if MIME type matches OR extension matches (handles octet-stream case)
+    if (allowedMimes.includes(file.mimetype) || allowedExtensions.includes(fileExtension)) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type. Only audio files are allowed.'));
+      cb(new Error(`Invalid file type. Only audio files are allowed. Got: ${file.mimetype} (${fileExtension})`));
     }
   },
 });
