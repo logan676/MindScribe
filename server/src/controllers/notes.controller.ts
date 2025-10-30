@@ -8,11 +8,17 @@ export class NotesController {
    * Generate clinical note from transcript
    */
   async generateNote(req: Request, res: Response) {
+    const { sessionId, noteType } = req.body;
+    logger.info('🧠 ========== AI NOTE GENERATION STARTED ==========', { sessionId, noteType });
+
     try {
-      const { sessionId, noteType } = req.body;
       const userId = 'ba36204c-5cf6-4aa7-91a6-70199d87dfe1'; // TODO: Get from auth middleware
 
+      // ==================== STEP 1: Validation ====================
+      logger.info('📝 Step 1/5: Validating request', { sessionId, noteType });
+
       if (!sessionId || !noteType) {
+        logger.warn('❌ Validation failed: Missing required fields', { sessionId, noteType });
         return res.status(400).json({
           error: 'Bad Request',
           message: 'sessionId and noteType are required',
@@ -20,13 +26,18 @@ export class NotesController {
       }
 
       if (noteType !== 'soap' && noteType !== 'dare') {
+        logger.warn('❌ Validation failed: Invalid note type', { sessionId, noteType });
         return res.status(400).json({
           error: 'Bad Request',
           message: 'noteType must be either "soap" or "dare"',
         });
       }
 
-      // Get transcript segments
+      logger.info('✅ Step 1/5: Validation passed', { sessionId, noteType });
+
+      // ==================== STEP 2: Fetch Transcript Segments ====================
+      logger.info('📂 Step 2/5: Fetching transcript segments from database', { sessionId });
+      const queryStart = Date.now();
       const segmentsResult = await pool.query(
         `
         SELECT speaker, text, start_time, end_time
@@ -38,21 +49,47 @@ export class NotesController {
       );
 
       if (segmentsResult.rows.length === 0) {
+        logger.warn('❌ No transcript found for session', { sessionId });
         return res.status(404).json({
           error: 'Not Found',
           message: 'No transcript found for this session',
         });
       }
 
-      // Format transcript
+      logger.info('✅ Step 2/5: Transcript segments fetched successfully', {
+        sessionId,
+        segmentCount: segmentsResult.rows.length,
+        queryTime: `${Date.now() - queryStart}ms`,
+        speakers: {
+          therapist: segmentsResult.rows.filter((s: any) => s.speaker === 'therapist').length,
+          client: segmentsResult.rows.filter((s: any) => s.speaker === 'client').length,
+        },
+      });
+
+      // ==================== STEP 3: Format Transcript ====================
+      logger.info('📝 Step 3/5: Formatting transcript for AI processing', { sessionId });
+      const formatStart = Date.now();
       const transcript = segmentsResult.rows
-        .map((segment) => {
+        .map((segment: any) => {
           const speaker = segment.speaker === 'therapist' ? 'Therapist' : 'Client';
           return `${speaker}: ${segment.text}`;
         })
         .join('\n\n');
 
+      const transcriptLength = transcript.length;
+      const transcriptWords = transcript.split(/\s+/).length;
+
+      logger.info('✅ Step 3/5: Transcript formatted successfully', {
+        sessionId,
+        formatTime: `${Date.now() - formatStart}ms`,
+        transcriptSize: `${(transcriptLength / 1024).toFixed(2)} KB`,
+        transcriptLength,
+        wordCount: transcriptWords,
+        estimatedTokens: Math.ceil(transcriptWords * 1.3), // Rough estimate
+      });
+
       // Get patient context
+      logger.info('👤 Fetching patient context', { sessionId });
       const patientResult = await pool.query(
         `
         SELECT p.first_name, p.last_name
@@ -67,7 +104,15 @@ export class NotesController {
         ? `${patientResult.rows[0].first_name} ${patientResult.rows[0].last_name}`
         : 'Unknown';
 
-      // Generate note using DeepSeek
+      logger.info('✅ Patient context retrieved', { sessionId, patientName });
+
+      // ==================== STEP 4: Generate Note with AI ====================
+      logger.info('🤖 Step 4/5: Calling DeepSeek API to generate clinical note', {
+        sessionId,
+        noteType: noteType.toUpperCase(),
+        patientName,
+        transcriptWordCount: transcriptWords,
+      });
       const apiStart = Date.now();
       const noteContent = await deepSeekService.generateClinicalNote({
         transcript,
@@ -76,11 +121,28 @@ export class NotesController {
           name: patientName,
         },
       });
-      logApiCall('DeepSeek', 'generateClinicalNote', Date.now() - apiStart, true);
+      const apiDuration = Date.now() - apiStart;
+      logApiCall('DeepSeek', 'generateClinicalNote', apiDuration, true);
 
-      logger.info('Clinical note generated', { sessionId, noteType, patientName });
+      logger.info('✅ Step 4/5: AI clinical note generated successfully', {
+        sessionId,
+        noteType: noteType.toUpperCase(),
+        apiDuration: `${(apiDuration / 1000).toFixed(2)}s`,
+        sections: {
+          subjective: noteContent.subjective ? `${noteContent.subjective.length} chars` : 'none',
+          objective: noteContent.objective ? `${noteContent.objective.length} chars` : 'none',
+          assessment: noteContent.assessment ? `${noteContent.assessment.length} chars` : 'none',
+          plan: noteContent.plan ? `${noteContent.plan.length} chars` : 'none',
+          description: noteContent.description ? `${noteContent.description.length} chars` : 'none',
+          action: noteContent.action ? `${noteContent.action.length} chars` : 'none',
+          response: noteContent.response ? `${noteContent.response.length} chars` : 'none',
+          evaluation: noteContent.evaluation ? `${noteContent.evaluation.length} chars` : 'none',
+        },
+      });
 
-      // Save note to database
+      // ==================== STEP 5: Save to Database ====================
+      logger.info('💾 Step 5/5: Saving clinical note to database', { sessionId, noteType });
+      const saveStart = Date.now();
       const insertResult = await pool.query(
         `
         INSERT INTO clinical_notes (
@@ -106,12 +168,37 @@ export class NotesController {
         ]
       );
 
+      logger.info('✅ Step 5/5: Clinical note saved to database', {
+        sessionId,
+        noteId: insertResult.rows[0].id,
+        saveTime: `${Date.now() - saveStart}ms`,
+      });
+
+      logger.info('🎉 ========== AI NOTE GENERATION COMPLETED ==========', {
+        sessionId,
+        noteType: noteType.toUpperCase(),
+        noteId: insertResult.rows[0].id,
+        totalDuration: `${(Date.now() - apiStart + Date.now() - queryStart).toFixed(0)}ms`,
+        breakdown: {
+          fetchTranscript: `${Date.now() - queryStart}ms`,
+          formatTranscript: `${Date.now() - formatStart}ms`,
+          aiGeneration: `${apiDuration}ms`,
+          saveToDatabase: `${Date.now() - saveStart}ms`,
+        },
+      });
+
       res.json({
         message: 'Clinical note generated successfully',
         note: insertResult.rows[0],
       });
     } catch (error) {
-      logError(error as Error, { method: 'generateNote', sessionId: req.body.sessionId });
+      logger.error('❌ ========== AI NOTE GENERATION FAILED ==========', {
+        sessionId,
+        noteType,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      logError(error as Error, { method: 'generateNote', sessionId, noteType });
       res.status(500).json({
         error: 'Internal Server Error',
         message: 'Failed to generate clinical note',
