@@ -132,36 +132,40 @@ const mockPatients = [
   },
 ];
 
-const mockSelectedPatient = {
-  id: '34592',
-  firstName: 'Amelia',
-  lastName: 'Chen',
-  dateOfBirth: '1995-08-15',
-  age: 28,
-  avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Amelia',
-  sessions: [
-    {
-      id: 'S2024-08',
-      date: 'July 15, 2024',
-      status: 'completed',
-    },
-    {
-      id: 'S2024-07',
-      date: 'July 08, 2024',
-      status: 'notes-pending',
-    },
-    {
-      id: 'S2024-06',
-      date: 'July 01, 2024',
-      status: 'completed',
-    },
-    {
-      id: 'S2024-05',
-      date: 'June 24, 2024',
-      status: 'completed',
-    },
-  ],
+// Function to generate mock sessions for a patient
+const generateMockSessions = (patientId: string) => {
+  const sessionCount = Math.floor(Math.random() * 5) + 2; // 2-6 sessions
+  const sessions = [];
+  const statuses = ['completed', 'notes-pending', 'processing'];
+
+  for (let i = 0; i < sessionCount; i++) {
+    const date = new Date();
+    date.setDate(date.getDate() - (i * 7)); // Weekly sessions
+    sessions.push({
+      id: `S2024-${String(20 - i).padStart(2, '0')}`,
+      date: date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+      status: statuses[Math.floor(Math.random() * statuses.length)],
+    });
+  }
+
+  return sessions;
 };
+
+// Function to generate date of birth
+const generateDateOfBirth = () => {
+  const year = 1960 + Math.floor(Math.random() * 40); // Ages between ~25-65
+  const month = String(Math.floor(Math.random() * 12) + 1).padStart(2, '0');
+  const day = String(Math.floor(Math.random() * 28) + 1).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+// Expand patient data with full details
+const mockPatientsWithDetails = mockPatients.map(patient => ({
+  ...patient,
+  dateOfBirth: generateDateOfBirth(),
+  age: Math.floor(Math.random() * 40) + 25, // Ages between 25-65
+  sessions: generateMockSessions(patient.id),
+}));
 
 type TabType = 'session-history' | 'profile-details' | 'documents';
 
@@ -170,7 +174,7 @@ export function Patients() {
   const [selectedPatientId, setSelectedPatientId] = useState(mockPatients[0].id);
   const [activeTab, setActiveTab] = useState<TabType>('session-history');
 
-  const selectedPatient = selectedPatientId === mockSelectedPatient.id ? mockSelectedPatient : null;
+  const selectedPatient = mockPatientsWithDetails.find(p => p.id === selectedPatientId) || null;
 
   const getStatusBadge = (status: string) => {
     const styles = {
@@ -183,9 +187,11 @@ export function Patients() {
       'notes-pending': 'Notes Pending',
       processing: 'Processing',
     };
+    const style = styles[status as keyof typeof styles] || 'bg-gray-100 text-gray-700';
+    const label = labels[status as keyof typeof labels] || status;
     return (
-      <span className={`px-3 py-1 rounded-full text-sm font-medium ${styles[status as keyof typeof styles]}`}>
-        {labels[status as keyof typeof labels]}
+      <span className={`px-3 py-1 rounded-full text-sm font-medium ${style}`}>
+        {label}
       </span>
     );
   };
@@ -220,10 +226,13 @@ export function Patients() {
         </div>
 
         {/* Add New Client Button */}
-        <button className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 mb-6">
+        <Link
+          to="/patients/new"
+          className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 mb-6"
+        >
           <Plus className="w-5 h-5" />
           Add New Client
-        </button>
+        </Link>
 
         {/* Patient List */}
         <div className="flex-1 overflow-y-auto space-y-2">
@@ -391,15 +400,108 @@ export function Patients() {
               </div>
             )}
 
-            {activeTab === 'profile-details' && (
-              <div className="text-center py-12">
-                <p className="text-gray-600">Profile details will be displayed here.</p>
+            {activeTab === 'profile-details' && selectedPatient && (
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 mb-6">Profile Details</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      First Name
+                    </label>
+                    <input
+                      type="text"
+                      value={selectedPatient.firstName}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      readOnly
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Last Name
+                    </label>
+                    <input
+                      type="text"
+                      value={selectedPatient.lastName}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      readOnly
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Date of Birth
+                    </label>
+                    <input
+                      type="text"
+                      value={selectedPatient.dateOfBirth}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      readOnly
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Age
+                    </label>
+                    <input
+                      type="text"
+                      value={`${selectedPatient.age} years`}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      readOnly
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Client ID
+                    </label>
+                    <input
+                      type="text"
+                      value={`#${selectedPatient.id}`}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      readOnly
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Total Sessions
+                    </label>
+                    <input
+                      type="text"
+                      value={selectedPatient.sessions.length}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      readOnly
+                    />
+                  </div>
+                </div>
               </div>
             )}
 
             {activeTab === 'documents' && (
-              <div className="text-center py-12">
-                <p className="text-gray-600">Documents will be displayed here.</p>
+              <div>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-bold text-gray-900">Documents</h2>
+                  <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    <Plus className="w-4 h-4" />
+                    Upload Document
+                  </button>
+                </div>
+                <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg">
+                  <svg
+                    className="mx-auto h-12 w-12 text-gray-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                  <p className="mt-4 text-gray-600">No documents uploaded yet</p>
+                  <p className="mt-2 text-sm text-gray-500">
+                    Upload consent forms, assessments, or other patient documents
+                  </p>
+                </div>
               </div>
             )}
           </>

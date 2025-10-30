@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Mic, Pause, Square, StopCircle, CheckCircle, Loader } from 'lucide-react';
+import { Mic, Pause, Square, StopCircle, CheckCircle, Loader, ArrowLeft } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 type RecordingStatus = 'ready' | 'recording' | 'paused' | 'processing';
@@ -242,6 +242,15 @@ export function SessionRecording() {
   // Recording Interface
   return (
     <div className="max-w-4xl mx-auto">
+      {/* Back Button */}
+      <button
+        onClick={() => navigate(-1)}
+        className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Back
+      </button>
+
       <div className="mb-6">
         <div className="text-sm text-gray-600 mb-2">
           Sessions / Client #{clientId || 'A4B8-7'} / New Recording

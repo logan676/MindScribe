@@ -12,7 +12,7 @@ export class SessionsController {
   async getSessions(req: Request, res: Response) {
     try {
       const { patientId, status } = req.query;
-      const userId = 'mock-user-id'; // TODO: Get from auth middleware
+      const userId = 'ba36204c-5cf6-4aa7-91a6-70199d87dfe1'; // TODO: Get from auth middleware
 
       let query = `
         SELECT s.*, p.first_name, p.last_name, p.client_id
@@ -88,7 +88,7 @@ export class SessionsController {
   async createSession(req: Request, res: Response) {
     try {
       const { patientId } = req.body;
-      const userId = 'mock-user-id'; // TODO: Get from auth middleware
+      const userId = 'ba36204c-5cf6-4aa7-91a6-70199d87dfe1'; // TODO: Get from auth middleware
 
       if (!patientId) {
         return res.status(400).json({

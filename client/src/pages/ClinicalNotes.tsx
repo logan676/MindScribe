@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Save, FileText, Lock, Clock, Sparkles } from 'lucide-react';
-import { useParams } from 'react-router-dom';
+import { Save, FileText, Lock, Clock, Sparkles, ArrowLeft } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
 
 type NoteType = 'soap' | 'dare';
 
@@ -40,6 +40,7 @@ const mockTranscript = [
 
 export function ClinicalNotes() {
   const { sessionId: _ } = useParams();
+  const navigate = useNavigate();
   const [noteType, setNoteType] = useState<NoteType>('soap');
   const [subjective, setSubjective] = useState(
     'Client reports a "rollercoaster" week with significant work-related stress due to a major project deadline. She notes a recurrence of sleep disruption and the "familiar sense of dread on Sunday evening." Client identifies a core fear of failure and "letting everyone down." She mentions utilizing mindfulness exercises with some success.'
@@ -53,7 +54,15 @@ export function ClinicalNotes() {
   const [plan, setPlan] = useState('');
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] gap-6">
+    <div>
+      <button
+        onClick={() => navigate(-1)}
+        className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Back
+      </button>
+      <div className="flex h-[calc(100vh-8rem)] gap-6">
       {/* Left Panel - Transcript */}
       <div className="w-1/3 flex flex-col">
         <div className="card flex-1 flex flex-col">
@@ -276,6 +285,7 @@ export function ClinicalNotes() {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

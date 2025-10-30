@@ -6,6 +6,7 @@ import { testConnection, initDatabase } from './config/database.js';
 import sessionsRoutes from './routes/sessions.routes.js';
 import notesRoutes from './routes/notes.routes.js';
 import patientsRoutes from './routes/patients.routes.js';
+import transcriptionsRoutes from './routes/transcriptions.routes.js';
 import healthRoutes from './routes/health.routes.js';
 import logger from './config/logger.js';
 import {
@@ -58,6 +59,7 @@ app.get('/api', (req, res) => {
       patients: '/api/patients',
       sessions: '/api/sessions',
       notes: '/api/notes',
+      transcriptions: '/api/transcriptions',
     },
   });
 });
@@ -65,6 +67,7 @@ app.get('/api', (req, res) => {
 app.use('/api/sessions', sessionsRoutes);
 app.use('/api/notes', notesRoutes);
 app.use('/api/patients', patientsRoutes);
+app.use('/api/transcriptions', transcriptionsRoutes);
 
 // 404 handler (must be before error handlers)
 app.use((req, res) => {

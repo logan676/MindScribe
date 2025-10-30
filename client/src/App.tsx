@@ -1,13 +1,18 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Layout } from './components/layout/Layout';
-import { Dashboard } from './pages/Dashboard';
-import { SessionRecording } from './pages/SessionRecording';
-import { ClinicalNotes } from './pages/ClinicalNotes';
-import { PatientProfile } from './pages/PatientProfile';
-import { Patients } from './pages/Patients';
-import { Search } from './pages/Search';
-import { Settings } from './pages/Settings';
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Layout } from "./components/layout/Layout";
+import { Dashboard } from "./pages/Dashboard";
+import { SessionRecording } from "./pages/SessionRecording";
+import { NewSession } from "./pages/NewSession";
+import { Sessions } from "./pages/Sessions";
+import { ClinicalNotes } from "./pages/ClinicalNotes";
+import { PatientProfile } from "./pages/PatientProfile";
+import { Patients } from "./pages/Patients";
+import { AddPatient } from "./pages/AddPatient";
+import { Search } from "./pages/Search";
+import { Settings } from "./pages/Settings";
+import { Billing } from "./pages/Billing";
+import { Notifications } from "./pages/Notifications";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -27,7 +32,8 @@ function App() {
           <Route path="/" element={<Layout />}>
             <Route index element={<Dashboard />} />
             <Route path="sessions">
-              <Route path="new" element={<SessionRecording />} />
+              <Route index element={<Sessions />} />
+              <Route path="new" element={<NewSession />} />
               <Route path=":sessionId" element={<SessionRecording />} />
             </Route>
             <Route path="notes">
@@ -36,10 +42,13 @@ function App() {
             </Route>
             <Route path="patients">
               <Route index element={<Patients />} />
+              <Route path="new" element={<AddPatient />} />
               <Route path=":patientId" element={<PatientProfile />} />
             </Route>
             <Route path="search" element={<Search />} />
+            <Route path="notifications" element={<Notifications />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="billing" element={<Billing />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>

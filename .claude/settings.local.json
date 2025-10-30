@@ -9,7 +9,22 @@
       "Bash(npm uninstall:*)",
       "Bash(tree:*)",
       "Bash(git init:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nInitial commit: MindScribe - Mental Health Clinical Notes Assistant\n\n🎉 Production-ready web application for mental health clinicians\n\n## Core Features\n- Browser-based audio recording with real-time waveform visualization\n- Real-time transcription powered by AssemblyAI with speaker diarization\n- AI-generated clinical notes (SOAP/DARE) using DeepSeek API\n- Complete patient management system\n- Advanced search across sessions, transcripts, and notes\n- HIPAA-compliant with audit logging\n\n## Tech Stack\nFrontend: React 19, TypeScript, Vite, Tailwind CSS v3, TanStack Query\nBackend: Node.js, Express 5, TypeScript, PostgreSQL 14+\nAPIs: AssemblyAI SDK, DeepSeek API\nDevOps: Docker, Docker Compose, Nginx, Winston logging\n\n## Architecture\n- Full-stack TypeScript application\n- RESTful API design with controller-service pattern\n- PostgreSQL database with 7 normalized tables\n- Async transcription workflow with polling\n- Multi-stage Docker builds for production\n- Comprehensive error logging with rotation\n- Health monitoring endpoints (basic, detailed, ready, live)\n\n## Project Structure\n- client/ - React frontend with 8 implemented screens\n- server/ - Express backend with complete API\n- Docker setup with docker-compose.yml\n- Comprehensive documentation (QUICKSTART, SETUP, DEPLOYMENT, etc.)\n\n## Deployment Ready\n- Docker containerization complete\n- Production deployment guide\n- Health monitoring and logging\n- Database seed script for testing\n- SSL/HTTPS configuration examples\n- Multiple cloud platform deployment guides\n\n📚 See README.md for full documentation and setup instructions\n\n🧠 Generated with Claude Code\nhttps://claude.com/claude-code\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git remote add:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(psql:*)",
+      "Bash(createdb:*)",
+      "Bash(npm run dev:*)",
+      "Bash(git restore:*)",
+      "Bash(git commit:*)",
+      "Bash(npm run seed:*)",
+      "Bash(PGPASSWORD= psql:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx eslint:*)",
+      "Bash(PGPASSWORD=postgres psql:*)",
+      "Bash(echo:*)"
     ],
     "deny": [],
     "ask": []

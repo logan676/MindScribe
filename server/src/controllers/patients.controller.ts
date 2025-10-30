@@ -8,7 +8,7 @@ export class PatientsController {
    */
   async getPatients(req: Request, res: Response) {
     try {
-      const userId = 'mock-user-id'; // TODO: Get from auth middleware
+      const userId = 'ba36204c-5cf6-4aa7-91a6-70199d87dfe1'; // TODO: Get from auth middleware
 
       const result = await pool.query(
         `
