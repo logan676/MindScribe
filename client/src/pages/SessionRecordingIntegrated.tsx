@@ -13,7 +13,7 @@ export function SessionRecordingIntegrated() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStep, setProcessingStep] = useState<ProcessingStep>('uploading');
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [_uploadProgress, _setUploadProgress] = useState(0);
 
   const { state, startRecording, pauseRecording, resumeRecording, stopRecording, error } =
     useAudioRecorder();

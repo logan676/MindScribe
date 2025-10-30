@@ -58,11 +58,11 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
   const streamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyzerRef = useRef<AnalyserNode | null>(null);
-  const durationIntervalRef = useRef<number>();
-  const animationFrameRef = useRef<number>();
+  const durationIntervalRef = useRef<number | undefined>(undefined);
+  const animationFrameRef = useRef<number | undefined>(undefined);
 
   // Audio level monitoring - using useRef to avoid stale closure
-  const monitorAudioLevelRef = useRef<() => void>();
+  const monitorAudioLevelRef = useRef<(() => void) | undefined>(undefined);
 
   monitorAudioLevelRef.current = () => {
     if (!analyzerRef.current) {

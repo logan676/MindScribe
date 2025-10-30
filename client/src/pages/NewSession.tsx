@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Mic, Pause, Play, Square, Loader, User, Calendar, ArrowLeft, Headphones } from 'lucide-react';
+import { Mic, Pause, Play, Square, Loader, User, ArrowLeft, Headphones } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAudioRecorder, type AudioDevice } from '../hooks/useAudioRecorder';
 import { api } from '../services/api';
@@ -37,13 +37,15 @@ export function NewSession() {
 
   // Force waveform to re-render more frequently for smooth animation
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: number | undefined;
     if (state.isRecording && !state.isPaused) {
       interval = setInterval(() => {
         setWaveformKey(prev => prev + 1);
       }, 50); // Update every 50ms for smooth animation
     }
-    return () => clearInterval(interval);
+    return () => {
+      if (interval !== undefined) clearInterval(interval);
+    };
   }, [state.isRecording, state.isPaused]);
 
   // Fetch patients on mount

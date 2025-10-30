@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, Edit, Plus, Calendar, Clock, FileText, User, Mail, Phone } from 'lucide-react';
+import { ArrowLeft, Download, Edit, Plus, Calendar, FileText, Mail, Phone } from 'lucide-react';
 import { api } from '../services/api';
 
 interface Patient {

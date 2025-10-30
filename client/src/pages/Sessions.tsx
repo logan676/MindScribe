@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, Clock, User, FileText, Filter, Search } from 'lucide-react';
+import { Calendar, Clock, FileText, Filter, Search } from 'lucide-react';
 import { api } from '../services/api';
 
 interface Session {

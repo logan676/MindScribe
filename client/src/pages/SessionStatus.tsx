@@ -19,6 +19,7 @@ interface Session {
   audio_file_path: string | null;
   recording_path: string | null;
   created_at: string;
+  updated_at?: string;
 }
 
 interface NotesStatus {
@@ -172,7 +173,7 @@ export function SessionStatus() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Session Status</h1>
         <p className="text-gray-600">
-          {session.first_name} {session.last_name} - Session #{sessionId.slice(-6)}
+          {session.first_name} {session.last_name} - Session #{sessionId?.slice(-6) || 'Unknown'}
         </p>
       </div>
 
@@ -470,7 +471,9 @@ export function SessionStatus() {
                 <div className="text-yellow-400 mt-2">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>
                 <div className="text-blue-400">⏱️  Session Duration: {Math.round(session.duration / 60)} minutes</div>
                 <div className="text-blue-400">🕐 Created: {new Date(session.created_at).toLocaleString()}</div>
-                <div className="text-blue-400">🔄 Last Updated: {new Date(session.updated_at).toLocaleString()}</div>
+                {session.updated_at && (
+                  <div className="text-blue-400">🔄 Last Updated: {new Date(session.updated_at).toLocaleString()}</div>
+                )}
               </div>
             </div>
           </div>

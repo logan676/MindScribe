@@ -49,10 +49,15 @@ class ApiClient {
     });
   }
 
-  async uploadRecording(sessionId: string, audioBlob: Blob) {
+  async uploadRecording(sessionId: string, audioFile: File | Blob) {
     const formData = new FormData();
-    formData.append('audio', audioBlob, 'recording.webm');
-    formData.append('sessionId', sessionId);
+
+    // If it's a File object, use its original name; otherwise use 'recording.webm'
+    if (audioFile instanceof File) {
+      formData.append('audio', audioFile, audioFile.name);
+    } else {
+      formData.append('audio', audioFile, 'recording.webm');
+    }
 
     const url = `${this.baseUrl}/sessions/${sessionId}/recording`;
     const response = await fetch(url, {
@@ -70,7 +75,7 @@ class ApiClient {
   }
 
   async getSession(sessionId: string) {
-    return this.request(`/sessions/${sessionId}`);
+    return this.request<any>(`/sessions/${sessionId}`);
   }
 
   async getSessions(params?: { patientId?: string; status?: string }) {
@@ -78,7 +83,7 @@ class ApiClient {
     if (params?.patientId) queryParams.append('patientId', params.patientId);
     if (params?.status) queryParams.append('status', params.status);
 
-    return this.request(`/sessions?${queryParams.toString()}`);
+    return this.request<{ sessions: any[] }>(`/sessions?${queryParams.toString()}`);
   }
 
   // Transcriptions
@@ -94,12 +99,12 @@ class ApiClient {
   }
 
   async getTranscriptSegments(sessionId: string) {
-    return this.request(`/transcriptions/${sessionId}/segments`);
+    return this.request<any>(`/transcriptions/${sessionId}/segments`);
   }
 
   // Clinical Notes
   async generateNote(sessionId: string, noteType: 'soap' | 'dare') {
-    return this.request(`/notes/generate`, {
+    return this.request<any>(`/notes/generate`, {
       method: 'POST',
       body: JSON.stringify({ sessionId, noteType }),
     });
@@ -150,16 +155,16 @@ class ApiClient {
   }
 
   async getSessionNotes(sessionId: string) {
-    return this.request(`/notes/session/${sessionId}`);
+    return this.request<any>(`/notes/session/${sessionId}`);
   }
 
   // Patients
   async getPatients() {
-    return this.request('/patients');
+    return this.request<{ patients: any[] }>('/patients');
   }
 
   async getPatient(patientId: string) {
-    return this.request(`/patients/${patientId}`);
+    return this.request<{ patient: any }>(`/patients/${patientId}`);
   }
 
   async createPatient(data: {
@@ -169,7 +174,7 @@ class ApiClient {
     email?: string;
     phone?: string;
   }) {
-    return this.request('/patients', {
+    return this.request<{ patient: any }>('/patients', {
       method: 'POST',
       body: JSON.stringify(data),
     });

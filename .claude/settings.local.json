@@ -25,7 +25,8 @@
       "Bash(npx eslint:*)",
       "Bash(PGPASSWORD=postgres psql:*)",
       "Bash(echo:*)",
-      "Bash(npm run seed:sessions:*)"
+      "Bash(npm run seed:sessions:*)",
+      "Bash(export PGPASSWORD=postgres:*)"
     ],
     "deny": [],
     "ask": []

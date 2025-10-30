@@ -93,7 +93,7 @@ export function AddPatient() {
       });
 
       // Navigate to the new patient's profile
-      navigate(`/patients/${response.id || response.patient?.id}`);
+      navigate(`/patients/${response.patient?.id || (response as any).id}`);
     } catch (err) {
       console.error('Failed to create patient:', err);
       setError(err instanceof Error ? err.message : 'Failed to create patient. Please try again.');

@@ -27,9 +27,9 @@ interface Appointment {
 export function Dashboard() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [sessions, setSessions] = useState<Session[]>([]);
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [_appointments, _setAppointments] = useState<Appointment[]>([]);
   const [isLoadingSessions, setIsLoadingSessions] = useState(true);
-  const [isLoadingAppointments, setIsLoadingAppointments] = useState(true);
+  const [_isLoadingAppointments, _setIsLoadingAppointments] = useState(true);
 
   // Fetch sessions on mount
   useEffect(() => {
