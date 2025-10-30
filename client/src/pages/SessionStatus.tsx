@@ -21,11 +21,18 @@ interface Session {
   created_at: string;
 }
 
+interface NotesStatus {
+  hasNotes: boolean;
+  isGenerating: boolean;
+}
+
 export function SessionStatus() {
   const { sessionId } = useParams();
   const navigate = useNavigate();
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [notesStatus, setNotesStatus] = useState<NotesStatus>({ hasNotes: false, isGenerating: false });
+  const [noteGenerationAttempted, setNoteGenerationAttempted] = useState(false);
 
   useEffect(() => {
     async function loadSession() {
@@ -34,6 +41,21 @@ export function SessionStatus() {
       try {
         const response = await api.getSession(sessionId);
         setSession(response.session);
+
+        // Check if notes exist
+        try {
+          const notesResponse = await api.getSessionNotes(sessionId);
+          const hasNotes = notesResponse.notes && notesResponse.notes.length > 0;
+          setNotesStatus(prev => ({ ...prev, hasNotes }));
+
+          // If transcription is complete but notes don't exist and we haven't attempted generation yet
+          if (response.session.transcription_status === 'completed' && !hasNotes && !noteGenerationAttempted) {
+            setNoteGenerationAttempted(true);
+            generateNotesAutomatically(sessionId);
+          }
+        } catch (err) {
+          console.log('No notes found yet');
+        }
       } catch (err) {
         console.error('Failed to load session:', err);
       } finally {
@@ -47,7 +69,24 @@ export function SessionStatus() {
     const interval = setInterval(loadSession, 5000);
 
     return () => clearInterval(interval);
-  }, [sessionId]);
+  }, [sessionId, noteGenerationAttempted]);
+
+  // Automatically generate notes when transcription completes
+  async function generateNotesAutomatically(sessionId: string) {
+    try {
+      setNotesStatus(prev => ({ ...prev, isGenerating: true }));
+      console.log('🤖 Automatically generating clinical notes...');
+
+      // Generate SOAP notes by default
+      await api.generateNote(sessionId, 'soap');
+
+      console.log('✅ Clinical notes generated successfully');
+      setNotesStatus({ hasNotes: true, isGenerating: false });
+    } catch (err) {
+      console.error('❌ Failed to generate notes automatically:', err);
+      setNotesStatus(prev => ({ ...prev, isGenerating: false }));
+    }
+  }
 
   if (isLoading) {
     return (
@@ -273,17 +312,17 @@ export function SessionStatus() {
                 </div>
               </div>
 
-              {/* Step 4: Ready for AI Notes */}
+              {/* Step 4: Chat View Ready */}
               <div className="flex items-start gap-3">
                 <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold flex-shrink-0 ${
-                  session.transcription_status === 'completed' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'
+                  session.transcription_status === 'completed' ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-400'
                 }`}>
                   4
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <span className={`text-sm font-medium ${session.transcription_status === 'completed' ? 'text-gray-900' : 'text-gray-400'}`}>
-                      Ready for Clinical Notes
+                      Chat View Ready
                     </span>
                     {session.transcription_status === 'completed' && (
                       <CheckCircle className="w-4 h-4 text-green-600" />
@@ -292,7 +331,40 @@ export function SessionStatus() {
                   <p className="text-xs text-gray-600">
                     {session.transcription_status === 'pending' && 'Pending transcription completion...'}
                     {session.transcription_status === 'in_progress' && 'Waiting for processing to complete...'}
-                    {session.transcription_status === 'completed' && 'Transcript ready for AI note generation'}
+                    {session.transcription_status === 'completed' && 'Transcript available in chat format'}
+                    {session.transcription_status === 'failed' && 'Not available'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Step 5: AI Clinical Notes Generation */}
+              <div className="flex items-start gap-3">
+                <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold flex-shrink-0 ${
+                  notesStatus.hasNotes ? 'bg-green-100 text-green-600' :
+                  notesStatus.isGenerating ? 'bg-blue-100 text-blue-600' :
+                  session.transcription_status === 'completed' ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-400'
+                }`}>
+                  5
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`text-sm font-medium ${
+                      notesStatus.hasNotes || notesStatus.isGenerating || session.transcription_status === 'completed' ? 'text-gray-900' : 'text-gray-400'
+                    }`}>
+                      AI Clinical Notes Generation
+                    </span>
+                    {notesStatus.isGenerating && (
+                      <Loader className="w-4 h-4 text-blue-600 animate-spin" />
+                    )}
+                    {notesStatus.hasNotes && (
+                      <CheckCircle className="w-4 h-4 text-green-600" />
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-600">
+                    {session.transcription_status !== 'completed' && 'Pending transcription completion...'}
+                    {session.transcription_status === 'completed' && notesStatus.isGenerating && 'Generating SOAP notes using AI...'}
+                    {session.transcription_status === 'completed' && notesStatus.hasNotes && 'Clinical notes generated and ready to review'}
+                    {session.transcription_status === 'completed' && !notesStatus.isGenerating && !notesStatus.hasNotes && 'Preparing to generate notes...'}
                     {session.transcription_status === 'failed' && 'Not available'}
                   </p>
                 </div>
@@ -340,15 +412,18 @@ export function SessionStatus() {
             >
               Go to Patients
             </button>
-            {session.transcription_status === 'completed' && (
-              <button
-                onClick={() => navigate(`/notes/${sessionId}`)}
-                className="btn-primary flex items-center gap-2"
-              >
-                <FileText className="w-4 h-4" />
-                View Clinical Notes
-              </button>
-            )}
+            <button
+              onClick={() => navigate(`/notes/${sessionId}`)}
+              disabled={!notesStatus.hasNotes}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                notesStatus.hasNotes
+                  ? 'btn-primary'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              <FileText className="w-4 h-4" />
+              {notesStatus.isGenerating ? 'Generating Notes...' : 'View Clinical Notes'}
+            </button>
           </div>
 
           <p className="text-sm text-gray-600">
