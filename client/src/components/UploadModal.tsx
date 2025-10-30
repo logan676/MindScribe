@@ -216,7 +216,7 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
 
       // Navigate to session status page after a short delay
       setTimeout(() => {
-        navigate(`/sessions/${newSessionId}`);
+        navigate(`/sessions/status/${newSessionId}`);
         onClose();
       }, 1500);
     } catch (error) {

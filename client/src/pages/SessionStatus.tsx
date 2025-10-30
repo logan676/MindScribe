@@ -325,6 +325,9 @@ export function SessionStatus() {
                     <span className={`text-sm font-medium ${session.transcription_status === 'completed' ? 'text-gray-900' : 'text-gray-400'}`}>
                       Chat View Ready
                     </span>
+                    {session.transcription_status === 'in_progress' && (
+                      <Loader className="w-4 h-4 text-purple-600 animate-spin" />
+                    )}
                     {session.transcription_status === 'completed' && (
                       <CheckCircle className="w-4 h-4 text-green-600" />
                     )}
