@@ -80,6 +80,7 @@ export async function initDatabase() {
         duration INTEGER,
         status VARCHAR(50) NOT NULL DEFAULT 'scheduled',
         transcription_status VARCHAR(50),
+        transcription_error TEXT,
         recording_url TEXT,
         recording_path TEXT,
         transcript_url TEXT,
@@ -96,8 +97,8 @@ export async function initDatabase() {
         session_id UUID NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
         speaker VARCHAR(50) NOT NULL,
         text TEXT NOT NULL,
-        start_time INTEGER NOT NULL,
-        end_time INTEGER NOT NULL,
+        start_time DECIMAL(10, 3) NOT NULL,
+        end_time DECIMAL(10, 3) NOT NULL,
         confidence DECIMAL(3, 2),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
@@ -156,10 +157,68 @@ export async function initDatabase() {
     `);
 
     console.log('✅ Database tables initialized successfully');
+
+    // Run migrations
+    await runMigrations(client);
   } catch (err) {
     console.error('❌ Database initialization error:', err);
     throw err;
   } finally {
     client.release();
+  }
+}
+
+async function runMigrations(client: any) {
+  try {
+    console.log('Running database migrations...');
+
+    // Migration 1: Add transcription_error column to sessions table
+    await client.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT FROM information_schema.columns
+          WHERE table_name = 'sessions' AND column_name = 'transcription_error'
+        ) THEN
+          ALTER TABLE sessions ADD COLUMN transcription_error TEXT;
+          RAISE NOTICE 'Added transcription_error column to sessions table';
+        END IF;
+      END $$;
+    `);
+
+    // Migration 2: Change start_time and end_time in transcript_segments to DECIMAL
+    await client.query(`
+      DO $$
+      BEGIN
+        -- Check if start_time is INTEGER type
+        IF EXISTS (
+          SELECT FROM information_schema.columns
+          WHERE table_name = 'transcript_segments'
+          AND column_name = 'start_time'
+          AND data_type = 'integer'
+        ) THEN
+          ALTER TABLE transcript_segments
+            ALTER COLUMN start_time TYPE DECIMAL(10, 3);
+          RAISE NOTICE 'Changed start_time to DECIMAL(10, 3)';
+        END IF;
+
+        -- Check if end_time is INTEGER type
+        IF EXISTS (
+          SELECT FROM information_schema.columns
+          WHERE table_name = 'transcript_segments'
+          AND column_name = 'end_time'
+          AND data_type = 'integer'
+        ) THEN
+          ALTER TABLE transcript_segments
+            ALTER COLUMN end_time TYPE DECIMAL(10, 3);
+          RAISE NOTICE 'Changed end_time to DECIMAL(10, 3)';
+        END IF;
+      END $$;
+    `);
+
+    console.log('✅ Database migrations completed successfully');
+  } catch (err) {
+    console.error('❌ Database migration error:', err);
+    // Don't throw - migrations might fail if already applied
   }
 }

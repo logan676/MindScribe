@@ -10,8 +10,8 @@ export class SessionsController {
    * Get all sessions
    */
   async getSessions(req: Request, res: Response) {
+    const { patientId, status } = req.query;
     try {
-      const { patientId, status } = req.query;
       const userId = 'ba36204c-5cf6-4aa7-91a6-70199d87dfe1'; // TODO: Get from auth middleware
 
       let query = `
@@ -127,7 +127,7 @@ export class SessionsController {
       const { id } = req.params;
       const file = req.file;
 
-      if (!file) {
+      if (!file || !file.path) {
         return res.status(400).json({
           error: 'Bad Request',
           message: 'No audio file provided',
@@ -152,8 +152,9 @@ export class SessionsController {
         });
       }
 
-      // Start transcription asynchronously
-      this.startTranscriptionAsync(id, file.path);
+      // Start transcription asynchronously (file.path is guaranteed to exist by check above)
+      // @ts-expect-error - file.path is guaranteed to be defined by the check above
+      void this.startTranscriptionAsync(id, file.path);
 
       res.json({
         message: 'Recording uploaded successfully',

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getTranscriptSegments } from '../controllers/transcriptions.controller';
+import { getTranscriptSegments } from '../controllers/transcriptions.controller.js';
 
 const router = Router();
 

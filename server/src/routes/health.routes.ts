@@ -86,7 +86,7 @@ router.get('/health/detailed', async (req: Request, res: Response) => {
     health.checks.cpu = {
       status: 'healthy',
       cores: cpus.length,
-      model: cpus[0].model,
+      model: cpus[0]?.model || 'Unknown',
       user: cpuUsage.user,
       system: cpuUsage.system,
     };

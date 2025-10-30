@@ -42,11 +42,11 @@ export class DeepSeekService {
       });
 
       if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json() as any;
         throw new Error(`DeepSeek API error: ${error.error?.message || 'Unknown error'}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
       const content = data.choices[0]?.message?.content;
 
       if (!content) {
