@@ -10,7 +10,7 @@ export class NotesController {
   async generateNote(req: Request, res: Response) {
     try {
       const { sessionId, noteType } = req.body;
-      const userId = 'mock-user-id'; // TODO: Get from auth middleware
+      const userId = 'ba36204c-5cf6-4aa7-91a6-70199d87dfe1'; // TODO: Get from auth middleware
 
       if (!sessionId || !noteType) {
         return res.status(400).json({
@@ -125,7 +125,7 @@ export class NotesController {
   async createNote(req: Request, res: Response) {
     try {
       const { sessionId, type, ...noteContent } = req.body;
-      const userId = 'mock-user-id'; // TODO: Get from auth middleware
+      const userId = 'ba36204c-5cf6-4aa7-91a6-70199d87dfe1'; // TODO: Get from auth middleware
 
       if (!sessionId || !type) {
         return res.status(400).json({

@@ -302,17 +302,8 @@ export function SessionStatus() {
         </div>
       </div>
 
-      {/* Debug Information Card */}
-      <div className="card p-6 mb-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Debug Information</h2>
-
-        <div className="bg-gray-900 text-gray-100 rounded-lg p-4 font-mono text-sm overflow-x-auto">
-          <pre>{JSON.stringify(session, null, 2)}</pre>
-        </div>
-      </div>
-
       {/* Next Steps */}
-      <div className="card p-6">
+      <div className="card p-6 mb-6">
         <h2 className="text-xl font-bold text-gray-900 mb-4">What Happens Next?</h2>
 
         <div className="space-y-3">
@@ -342,11 +333,7 @@ export function SessionStatus() {
         </div>
 
         <div className="mt-6 pt-6 border-t border-gray-200">
-          <p className="text-sm text-gray-600 mb-4">
-            💡 <strong>Tip:</strong> This page auto-refreshes every 5 seconds. You can navigate away and check back later.
-          </p>
-
-          <div className="flex gap-3">
+          <div className="flex gap-3 mb-4">
             <button
               onClick={() => navigate('/patients')}
               className="btn-secondary"
@@ -363,6 +350,19 @@ export function SessionStatus() {
               </button>
             )}
           </div>
+
+          <p className="text-sm text-gray-600">
+            💡 <strong>Tip:</strong> This page auto-refreshes every 5 seconds. You can navigate away and check back later.
+          </p>
+        </div>
+      </div>
+
+      {/* Debug Information Card */}
+      <div className="card p-6">
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Debug Information</h2>
+
+        <div className="bg-gray-900 text-gray-100 rounded-lg p-4 font-mono text-sm overflow-x-auto">
+          <pre>{JSON.stringify(session, null, 2)}</pre>
         </div>
       </div>
     </div>
