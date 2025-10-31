@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, ChevronRight, Plus } from 'lucide-react';
+import { Search, ChevronRight, Plus, ChevronLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { api } from '../services/api';
 
@@ -53,6 +53,7 @@ export function Patients() {
   const [isLoading, setIsLoading] = useState(true);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [isLoadingSessions, setIsLoadingSessions] = useState(false);
+  const [showMobileDetail, setShowMobileDetail] = useState(false);
 
   // Fetch patients on mount
   useEffect(() => {
@@ -147,9 +148,9 @@ export function Patients() {
   };
 
   return (
-    <div className="flex gap-6 h-[calc(100vh-8rem)]">
+    <div className="flex flex-col md:flex-row gap-4 md:gap-6 h-auto md:h-[calc(100vh-8rem)]">
       {/* Left Sidebar */}
-      <div className="w-80 bg-white rounded-lg shadow-sm p-6 flex flex-col">
+      <div className={`w-full md:w-80 bg-white rounded-lg shadow-sm p-4 md:p-6 flex flex-col ${showMobileDetail ? 'hidden md:flex' : 'flex'}`}>
         {/* Search */}
         <div className="relative mb-4">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -195,7 +196,10 @@ export function Patients() {
               .map((patient) => (
                 <button
                   key={patient.id}
-                  onClick={() => setSelectedPatientId(patient.id)}
+                  onClick={() => {
+                    setSelectedPatientId(patient.id);
+                    setShowMobileDetail(true);
+                  }}
                   className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${
                     selectedPatientId === patient.id
                       ? 'bg-blue-50 border-2 border-blue-200'
@@ -221,25 +225,34 @@ export function Patients() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 bg-white rounded-lg shadow-sm p-8 overflow-y-auto">
+      <div className={`flex-1 bg-white rounded-lg shadow-sm p-4 md:p-8 overflow-y-auto ${!showMobileDetail ? 'hidden md:block' : 'block'}`}>
         {selectedPatient ? (
           <>
+            {/* Mobile back button */}
+            <button
+              onClick={() => setShowMobileDetail(false)}
+              className="md:hidden flex items-center gap-2 text-gray-600 mb-4 hover:text-gray-900"
+            >
+              <ChevronLeft className="w-5 h-5" />
+              <span>Back to Patients</span>
+            </button>
+
             {/* Patient Header */}
-            <div className="flex items-start justify-between mb-6">
-              <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
+              <div className="flex items-center gap-3 sm:gap-4">
                 <img
                   src={getAvatarUrl(selectedPatient.first_name, selectedPatient.last_name)}
                   alt={`${selectedPatient.first_name} ${selectedPatient.last_name}`}
-                  className="w-20 h-20 rounded-full"
+                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-full"
                 />
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
                     {selectedPatient.first_name} {selectedPatient.last_name}
                   </h1>
-                  <p className="text-gray-600">
+                  <p className="text-sm sm:text-base text-gray-600">
                     Client ID: {selectedPatient.client_id}
                     {selectedPatient.date_of_birth && (
-                      <> • DOB: {selectedPatient.date_of_birth} ({calculateAge(selectedPatient.date_of_birth)} yrs)</>
+                      <span className="hidden sm:inline"> • DOB: {selectedPatient.date_of_birth} ({calculateAge(selectedPatient.date_of_birth)} yrs)</span>
                     )}
                   </p>
                 </div>

@@ -1,0 +1,51 @@
+{
+  "family": "mindscribe-backend",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "executionRoleArn": "arn:aws:iam::699634487278:role/mindscribe-ecs-execution-role",
+  "taskRoleArn": "arn:aws:iam::699634487278:role/mindscribe-ecs-task-role",
+  "containerDefinitions": [
+    {
+      "name": "backend",
+      "image": "699634487278.dkr.ecr.us-east-1.amazonaws.com/mindscribe/backend:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 3001,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {"name": "NODE_ENV", "value": "production"},
+        {"name": "PORT", "value": "3001"},
+        {"name": "PGHOST", "value": "mindscribe-db.ckl2aqa8ieos.us-east-1.rds.amazonaws.com"},
+        {"name": "PGPORT", "value": "5432"},
+        {"name": "PGDATABASE", "value": "mindscribe"},
+        {"name": "PGUSER", "value": "mindscribe_admin"},
+        {"name": "PGPASSWORD", "value": "MindScribe2025!DB"},
+        {"name": "ASSEMBLYAI_API_KEY", "value": "e332636e5f094c909dddcb53cf9ae264"},
+        {"name": "DEEPSEEK_API_KEY", "value": "sk-ab56aefd2b1a465691d77eef528c2cb5"},
+        {"name": "JWT_SECRET", "value": "e5e740b5e1793e464148b7d446f83729dba8b0a7dd3890fe782ca8d9c551771d"},
+        {"name": "CORS_ORIGIN", "value": "*"}
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/mindscribe-backend",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "backend",
+          "awslogs-create-group": "true"
+        }
+      },
+      "healthCheck": {
+        "command": ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3001/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})\""],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 60
+      }
+    }
+  ]
+}

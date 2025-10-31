@@ -14,6 +14,7 @@ import { Search } from "./pages/Search";
 import { Settings } from "./pages/Settings";
 import { Billing } from "./pages/Billing";
 import { Notifications } from "./pages/Notifications";
+import { Help } from "./pages/Help";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -51,6 +52,7 @@ function App() {
             <Route path="notifications" element={<Notifications />} />
             <Route path="settings" element={<Settings />} />
             <Route path="billing" element={<Billing />} />
+            <Route path="help" element={<Help />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>

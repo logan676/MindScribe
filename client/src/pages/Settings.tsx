@@ -63,50 +63,52 @@ export function Settings() {
   };
 
   return (
-    <div className="flex gap-6">
+    <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
       {/* Sidebar */}
       <div
-        className="w-64 bg-white rounded-lg shadow-sm p-6 flex flex-col"
+        className="w-full lg:w-64 bg-white rounded-lg shadow-sm p-4 lg:p-6 flex flex-col"
         style={{ height: "fit-content" }}
       >
         {/* User Profile Card */}
-        <div className="mb-6">
-          <div className="flex items-center gap-3 mb-6">
+        <div className="mb-4 lg:mb-6">
+          <div className="flex items-center gap-3 mb-4 lg:mb-6">
             <img
               src={user.avatar}
               alt={user.name}
-              className="w-12 h-12 rounded-full"
+              className="w-10 h-10 lg:w-12 lg:h-12 rounded-full"
             />
             <div>
-              <h3 className="font-semibold text-gray-900">{user.name}</h3>
-              <p className="text-sm text-gray-600">{user.title}</p>
+              <h3 className="text-sm lg:text-base font-semibold text-gray-900">{user.name}</h3>
+              <p className="text-xs lg:text-sm text-gray-600">{user.title}</p>
             </div>
           </div>
 
           {/* Navigation Tabs */}
-          <nav className="space-y-1">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors ${
-                    activeTab === tab.id
-                      ? "bg-blue-50 text-blue-600"
-                      : "text-gray-700 hover:bg-gray-50"
-                  }`}
-                >
-                  <Icon className="w-5 h-5" />
-                  <span className="font-medium">{tab.label}</span>
-                </button>
-              );
-            })}
+          <nav className="space-y-1 overflow-x-auto lg:overflow-visible">
+            <div className="flex lg:flex-col gap-2 lg:gap-1 lg:space-y-0">
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2 lg:py-2.5 rounded-lg transition-colors whitespace-nowrap ${
+                      activeTab === tab.id
+                        ? "bg-blue-50 text-blue-600"
+                        : "text-gray-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    <Icon className="w-4 h-4 lg:w-5 lg:h-5 flex-shrink-0" />
+                    <span className="text-sm lg:text-base font-medium">{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </nav>
         </div>
 
         {/* View Profile Button */}
-        <button className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+        <button className="hidden lg:block w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 transition-colors">
           View Profile
         </button>
       </div>
@@ -116,23 +118,23 @@ export function Settings() {
         {activeTab === "account" && (
           <div>
             {/* Header */}
-            <div className="mb-6">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            <div className="mb-4 lg:mb-6">
+              <h1 className="text-xl lg:text-2xl font-bold text-gray-900 mb-2">
                 Account Settings
               </h1>
-              <p className="text-gray-600">
+              <p className="text-sm lg:text-base text-gray-600">
                 Manage your profile, password, and security settings.
               </p>
             </div>
 
             {/* Profile Information Section */}
-            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">
+            <div className="bg-white rounded-lg shadow-sm p-4 lg:p-6 mb-4 lg:mb-6">
+              <h2 className="text-lg lg:text-xl font-semibold text-gray-900 mb-4 lg:mb-6">
                 Profile Information
               </h2>
 
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Full Name
@@ -179,7 +181,7 @@ export function Settings() {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 mt-6">
+              <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6">
                 <button
                   onClick={() =>
                     setFormData({
@@ -188,13 +190,13 @@ export function Settings() {
                       email: user.email,
                     })
                   }
-                  className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="w-full sm:w-auto px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSaveChanges}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   Save Changes
                 </button>
@@ -202,14 +204,14 @@ export function Settings() {
             </div>
 
             {/* Password & Security Section */}
-            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">
+            <div className="bg-white rounded-lg shadow-sm p-4 lg:p-6 mb-4 lg:mb-6">
+              <h2 className="text-lg lg:text-xl font-semibold text-gray-900 mb-4 lg:mb-6">
                 Password & Security
               </h2>
 
               <div className="space-y-6">
                 {/* Password */}
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <h3 className="font-medium text-gray-900">Password</h3>
                     <p className="text-sm text-gray-600">
@@ -218,14 +220,14 @@ export function Settings() {
                   </div>
                   <button
                     onClick={handleChangePassword}
-                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="w-full sm:w-auto px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap"
                   >
                     Change Password
                   </button>
                 </div>
 
                 {/* Two-Factor Authentication */}
-                <div className="flex items-center justify-between pt-6 border-t border-gray-200">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-6 border-t border-gray-200">
                   <div>
                     <h3 className="font-medium text-gray-900">
                       Two-Factor Authentication (2FA)
@@ -251,12 +253,12 @@ export function Settings() {
             </div>
 
             {/* Subscription Section */}
-            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">
+            <div className="bg-white rounded-lg shadow-sm p-4 lg:p-6 mb-4 lg:mb-6">
+              <h2 className="text-lg lg:text-xl font-semibold text-gray-900 mb-4 lg:mb-6">
                 Subscription
               </h2>
 
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <h3 className="font-medium text-gray-900">{user.plan}</h3>
                   <p className="text-sm text-gray-600">
@@ -265,7 +267,7 @@ export function Settings() {
                 </div>
                 <Link
                   to="/billing"
-                  className="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors font-medium"
+                  className="w-full sm:w-auto text-center px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors font-medium whitespace-nowrap"
                 >
                   Manage Billing
                 </Link>
@@ -273,12 +275,12 @@ export function Settings() {
             </div>
 
             {/* Danger Zone Section */}
-            <div className="bg-white rounded-lg shadow-sm border-2 border-red-200 p-6">
-              <h2 className="text-xl font-semibold text-red-600 mb-6">
+            <div className="bg-white rounded-lg shadow-sm border-2 border-red-200 p-4 lg:p-6">
+              <h2 className="text-lg lg:text-xl font-semibold text-red-600 mb-4 lg:mb-6">
                 Danger Zone
               </h2>
 
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <h3 className="font-medium text-gray-900">Delete Account</h3>
                   <p className="text-sm text-gray-600">
@@ -287,7 +289,7 @@ export function Settings() {
                 </div>
                 <button
                   onClick={handleDeleteAccount}
-                  className="px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                  className="w-full sm:w-auto px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors whitespace-nowrap"
                 >
                   Delete Account
                 </button>
@@ -298,26 +300,26 @@ export function Settings() {
 
         {activeTab === "appearance" && (
           <div>
-            <div className="mb-6">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            <div className="mb-4 lg:mb-6">
+              <h1 className="text-xl lg:text-2xl font-bold text-gray-900 mb-2">
                 Appearance Settings
               </h1>
-              <p className="text-gray-600">
+              <p className="text-sm lg:text-base text-gray-600">
                 Customize the look and feel of your workspace.
               </p>
             </div>
 
             {/* Theme Selection */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">
+            <div className="bg-white rounded-lg shadow-sm p-4 lg:p-6">
+              <h2 className="text-lg lg:text-xl font-semibold text-gray-900 mb-4 lg:mb-6">
                 Choose Your Theme
               </h2>
-              <p className="text-gray-600 mb-6">
+              <p className="text-sm lg:text-base text-gray-600 mb-4 lg:mb-6">
                 Select a color theme that matches your preference and working
                 style.
               </p>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {(Object.keys(themes) as ThemeType[]).map((themeKey) => {
                   const themeData = themes[themeKey];
                   const isSelected = theme === themeKey;
@@ -405,17 +407,17 @@ export function Settings() {
 
         {activeTab === "compliance" && (
           <div>
-            <div className="mb-6">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            <div className="mb-4 lg:mb-6">
+              <h1 className="text-xl lg:text-2xl font-bold text-gray-900 mb-2">
                 Compliance Settings
               </h1>
-              <p className="text-gray-600">
+              <p className="text-sm lg:text-base text-gray-600">
                 Manage HIPAA compliance and audit settings.
               </p>
             </div>
-            <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-              <Shield className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">
+            <div className="bg-white rounded-lg shadow-sm p-6 lg:p-8 text-center">
+              <Shield className="w-12 h-12 lg:w-16 lg:h-16 text-gray-400 mx-auto mb-4" />
+              <p className="text-sm lg:text-base text-gray-600">
                 Compliance settings will be available soon.
               </p>
             </div>
@@ -424,17 +426,17 @@ export function Settings() {
 
         {activeTab === "integrations" && (
           <div>
-            <div className="mb-6">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            <div className="mb-4 lg:mb-6">
+              <h1 className="text-xl lg:text-2xl font-bold text-gray-900 mb-2">
                 Integrations
               </h1>
-              <p className="text-gray-600">
+              <p className="text-sm lg:text-base text-gray-600">
                 Connect with third-party services and APIs.
               </p>
             </div>
-            <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-              <Plug className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">
+            <div className="bg-white rounded-lg shadow-sm p-6 lg:p-8 text-center">
+              <Plug className="w-12 h-12 lg:w-16 lg:h-16 text-gray-400 mx-auto mb-4" />
+              <p className="text-sm lg:text-base text-gray-600">
                 Integration settings will be available soon.
               </p>
             </div>
@@ -443,17 +445,17 @@ export function Settings() {
 
         {activeTab === "templates" && (
           <div>
-            <div className="mb-6">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            <div className="mb-4 lg:mb-6">
+              <h1 className="text-xl lg:text-2xl font-bold text-gray-900 mb-2">
                 Templates
               </h1>
-              <p className="text-gray-600">
+              <p className="text-sm lg:text-base text-gray-600">
                 Manage your clinical note templates and formats.
               </p>
             </div>
-            <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-              <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">
+            <div className="bg-white rounded-lg shadow-sm p-6 lg:p-8 text-center">
+              <FileText className="w-12 h-12 lg:w-16 lg:h-16 text-gray-400 mx-auto mb-4" />
+              <p className="text-sm lg:text-base text-gray-600">
                 Template management will be available soon.
               </p>
             </div>

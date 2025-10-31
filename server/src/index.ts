@@ -2,12 +2,13 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import fs from 'fs';
-import { testConnection, initDatabase } from './config/database.js';
+import { ensureDatabaseExists, testConnection, initDatabase } from './config/database.js';
 import sessionsRoutes from './routes/sessions.routes.js';
 import notesRoutes from './routes/notes.routes.js';
 import patientsRoutes from './routes/patients.routes.js';
 import transcriptionsRoutes from './routes/transcriptions.routes.js';
 import healthRoutes from './routes/health.routes.js';
+import seedRoutes from './routes/seed.routes.js';
 import logger from './config/logger.js';
 import {
   requestLogger,
@@ -68,6 +69,7 @@ app.use('/api/sessions', sessionsRoutes);
 app.use('/api/notes', notesRoutes);
 app.use('/api/patients', patientsRoutes);
 app.use('/api/transcriptions', transcriptionsRoutes);
+app.use('/api', seedRoutes);
 
 // 404 handler (must be before error handlers)
 app.use((req, res) => {
@@ -84,6 +86,15 @@ app.use(errorHandler);
 // Start server
 async function startServer() {
   try {
+    // Ensure database exists
+    logger.info('Checking if database exists...');
+    const dbCreated = await ensureDatabaseExists();
+
+    if (!dbCreated) {
+      logger.error('Failed to ensure database exists. Server not started.');
+      process.exit(1);
+    }
+
     // Test database connection
     const dbConnected = await testConnection();
 

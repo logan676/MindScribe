@@ -84,7 +84,7 @@ export class PatientsController {
   async createPatient(req: Request, res: Response) {
     try {
       const { firstName, lastName, dateOfBirth, email, phone } = req.body;
-      const userId = 'mock-user-id'; // TODO: Get from auth middleware
+      const userId = 'ba36204c-5cf6-4aa7-91a6-70199d87dfe1'; // TODO: Get from auth middleware
 
       // Validation
       if (!firstName || !lastName || !dateOfBirth) {

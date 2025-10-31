@@ -21,6 +21,45 @@ pool.on('error', (err) => {
   process.exit(-1);
 });
 
+export async function ensureDatabaseExists() {
+  // Create a pool connection to the default 'postgres' database
+  const defaultPool = new Pool({
+    host: process.env.PGHOST || 'localhost',
+    port: parseInt(process.env.PGPORT || '5432'),
+    database: 'postgres', // Connect to default postgres database
+    user: process.env.PGUSER || 'postgres',
+    password: process.env.PGPASSWORD,
+    connectionTimeoutMillis: 5000,
+  });
+
+  try {
+    const client = await defaultPool.connect();
+    const dbName = process.env.PGDATABASE || 'mindscribe';
+
+    // Check if database exists
+    const result = await client.query(
+      `SELECT 1 FROM pg_database WHERE datname = $1`,
+      [dbName]
+    );
+
+    if (result.rows.length === 0) {
+      console.log(`Creating database '${dbName}'...`);
+      await client.query(`CREATE DATABASE ${dbName}`);
+      console.log(`✅ Database '${dbName}' created successfully`);
+    } else {
+      console.log(`✅ Database '${dbName}' already exists`);
+    }
+
+    client.release();
+    await defaultPool.end();
+    return true;
+  } catch (err) {
+    console.error('❌ Error ensuring database exists:', err);
+    await defaultPool.end();
+    return false;
+  }
+}
+
 export async function testConnection() {
   try {
     const client = await pool.connect();

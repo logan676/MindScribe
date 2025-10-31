@@ -23,7 +23,6 @@ class ApiClient {
         'Content-Type': 'application/json',
         ...options.headers,
       },
-      credentials: 'include',
     };
 
     try {
@@ -63,7 +62,6 @@ class ApiClient {
     const response = await fetch(url, {
       method: 'POST',
       body: formData,
-      credentials: 'include',
     });
 
     if (!response.ok) {
